@@ -222,13 +222,15 @@ alter publication supabase_realtime add table public.activity_logs;
 
 ## 5. Step-by-Step Implementation Instructions
 
-### Step 1: Initialize the Supabase Project
-1. Log in to [Supabase](https://supabase.com).
-2. Click **New Project** and name it `CozySpace`.
-3. Select your closest geographical region and choose a secure database password.
-4. Navigate to the **SQL Editor** tab in the sidebar and run the SQL script from Section 4.
-5. Navigate to **Storage**, click **New Bucket**, name it `photos`, and configure it as a restricted or authenticated bucket.
-6. Copy your **Project URL** and **Publishable `anon` Key** from **Project Settings > API**.
+### Step 1: Your Active Supabase Project Credentials
+Your Supabase project has been provisioned and configured:
+* **Project Name:** `CozySpace`
+* **Project Reference / ID:** `fiauyvcbdhgijxwvhvaz`
+* **Region:** `ap-south-1`
+* **Project URL:** `https://fiauyvcbdhgijxwvhvaz.supabase.co`
+* **Publishable API Key:** `sb_publishable_90avx2PkIt7R5SoD71NwcA_MIx25IMy`
+* **Legacy Anon Key:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpYXV5dmNiZGhnaWp4d3ZodmF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwMjA1MTUsImV4cCI6MjExMDU5NjUxNX0.A6_d8ApufrLW8A28oPKR6v1M0AAjVStyP5eMxY-pC3I`
+* **Storage Bucket:** `photos` (Configured and ready for memories)
 
 ### Step 2: Connect Frontend to Supabase
 1. In your frontend repository, install the official Supabase JavaScript SDK or include it via CDN in `index.html`:
@@ -237,8 +239,8 @@ alter publication supabase_realtime add table public.activity_logs;
    ```
 2. Initialize Supabase in `app.js`:
    ```javascript
-   const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
-   const SUPABASE_ANON_KEY = 'YOUR_ANON_PUBLIC_KEY';
+   const SUPABASE_URL = 'https://fiauyvcbdhgijxwvhvaz.supabase.co';
+   const SUPABASE_ANON_KEY = 'sb_publishable_90avx2PkIt7R5SoD71NwcA_MIx25IMy';
    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
    ```
 3. Subscribe to real-time hug events:
