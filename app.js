@@ -95,7 +95,17 @@ const els = {
   partnerStatusLabel: document.querySelector("#partnerStatusLabel"),
   openSettingsModalButton: document.querySelector("#openSettingsModalButton"),
 
-  // Auth Modal
+  // Sign In Tab Sections
+  authLoggedOutSection: document.querySelector("#authLoggedOutSection"),
+  authLoggedInSection: document.querySelector("#authLoggedInSection"),
+  authProfileAvatar: document.querySelector("#authProfileAvatar"),
+  authProfileEmail: document.querySelector("#authProfileEmail"),
+  authProfileThemeTag: document.querySelector("#authProfileThemeTag"),
+  authProfilePartnerTag: document.querySelector("#authProfilePartnerTag"),
+  authGoToMainButton: document.querySelector("#authGoToMainButton"),
+  authSignOutButton: document.querySelector("#authSignOutButton"),
+
+  // Auth Elements
   authModal: document.querySelector("#authModal"),
   authModalCloseButtons: document.querySelectorAll("[data-close-auth-modal]"),
   genderFemaleButton: document.querySelector("#genderFemaleButton"),
@@ -209,35 +219,31 @@ function wireUiEvents() {
     button.addEventListener("click", () => setActiveView(button.dataset.targetView));
   });
 
-  // Auth Modal
-  els.openAuthModalButton?.addEventListener("click", openAuthModal);
-  els.authModalCloseButtons.forEach((btn) => btn.addEventListener("click", closeAuthModal));
+  // Profile Strip navigation pills (Directly switch tabs)
+  els.openAuthModalButton?.addEventListener("click", () => setActiveView("signin"));
+  els.openInviteModalButton?.addEventListener("click", () => setActiveView("settings"));
+  els.openSettingsModalButton?.addEventListener("click", () => setActiveView("settings"));
+
+  // Sign In Tab & Gender Theme Events
   els.genderFemaleButton?.addEventListener("click", () => setGender("female"));
   els.genderMaleButton?.addEventListener("click", () => setGender("male"));
   els.googleSignInButton?.addEventListener("click", handleGoogleSignIn);
   els.githubSignInButton?.addEventListener("click", handleGithubSignIn);
   els.emailAuthForm?.addEventListener("submit", handleEmailSignIn);
   els.emailSignUpButton?.addEventListener("click", handleEmailSignUp);
+  els.authGoToMainButton?.addEventListener("click", () => setActiveView("dashboard"));
+  els.authSignOutButton?.addEventListener("click", handleSignOut);
 
-  // Invite Modal
-  els.openInviteModalButton?.addEventListener("click", openInviteModal);
-  els.inviteModalCloseButtons.forEach((btn) => btn.addEventListener("click", closeInviteModal));
+  // Settings Tab & Partner Invite Events
   els.copyInviteLinkButton?.addEventListener("click", copyInviteLink);
   els.shareInviteButton?.addEventListener("click", shareInvite);
   els.copyInviteCodeOnlyButton?.addEventListener("click", copyInviteCodeOnly);
   els.codeJoinForm?.addEventListener("submit", handleManualCodeJoin);
-
-  // Settings Modal
-  els.openSettingsModalButton?.addEventListener("click", openSettingsModal);
-  els.settingsModalCloseButtons.forEach((btn) => btn.addEventListener("click", closeSettingsModal));
   els.hapticsToggle?.addEventListener("change", (e) => setHaptics(e.target.checked));
   els.testHapticsButton?.addEventListener("click", testHapticVibration);
   els.settingsThemeFemaleButton?.addEventListener("click", () => setGender("female"));
   els.settingsThemeMaleButton?.addEventListener("click", () => setGender("male"));
-  els.settingsManageInviteButton?.addEventListener("click", () => {
-    closeSettingsModal();
-    openInviteModal();
-  });
+  els.settingsSignOutButton?.addEventListener("click", handleSignOut);
   els.settingsSignOutButton?.addEventListener("click", handleSignOut);
 
   // Join Modal
@@ -369,6 +375,7 @@ function updateUserBadge() {
     els.authButtonLabel.textContent = `${isFemale ? "Female ♀" : "Male ♂"} • Sign In`;
     if (els.settingsSignOutButton) els.settingsSignOutButton.hidden = true;
   }
+  updateAuthTabUi();
 }
 
 function updatePartnerBadge() {
@@ -386,6 +393,55 @@ function updatePartnerBadge() {
   } else {
     els.partnerStatusLabel.textContent = "Invite Partner (1/2)";
     if (els.partnerChipIcon) els.partnerChipIcon.textContent = "💌";
+  }
+  updateAuthTabUi();
+}
+
+function updateAuthTabUi() {
+  const isFemale = state.gender === "female";
+  if (els.genderFemaleButton) {
+    els.genderFemaleButton.classList.toggle("is-selected", isFemale);
+    els.genderFemaleButton.setAttribute("aria-pressed", String(isFemale));
+  }
+  if (els.genderMaleButton) {
+    els.genderMaleButton.classList.toggle("is-selected", !isFemale);
+    els.genderMaleButton.setAttribute("aria-pressed", String(!isFemale));
+  }
+  if (els.settingsThemeFemaleButton) {
+    els.settingsThemeFemaleButton.classList.toggle("is-selected", isFemale);
+  }
+  if (els.settingsThemeMaleButton) {
+    els.settingsThemeMaleButton.classList.toggle("is-selected", !isFemale);
+  }
+
+  if (state.user) {
+    if (els.authLoggedOutSection) els.authLoggedOutSection.hidden = true;
+    if (els.authLoggedInSection) els.authLoggedInSection.hidden = false;
+    if (els.authProfileEmail) els.authProfileEmail.textContent = state.user.email || "Active User";
+    if (els.authProfileAvatar) {
+      els.authProfileAvatar.textContent = isFemale ? "♀" : "♂";
+      els.authProfileAvatar.style.background = isFemale ? "#e30b5c" : "#A4D8FF";
+      els.authProfileAvatar.style.color = isFemale ? "#fff" : "#1a2530";
+    }
+    if (els.authProfileThemeTag) {
+      els.authProfileThemeTag.textContent = isFemale ? "Female ♀ Aesthetic Active" : "Male ♂ Aesthetic Active";
+    }
+    if (els.authProfilePartnerTag) {
+      els.authProfilePartnerTag.textContent = state.space?.member_count >= 2
+        ? `Connected with ${state.partnerName} 💑`
+        : "Partner: Waiting for invite (1/2)";
+    }
+    if (els.settingsAccountSummary) {
+      els.settingsAccountSummary.textContent = `Signed in as ${state.user.email} (Supabase Cloud connected)`;
+    }
+    if (els.settingsSignOutButton) els.settingsSignOutButton.hidden = false;
+  } else {
+    if (els.authLoggedOutSection) els.authLoggedOutSection.hidden = false;
+    if (els.authLoggedInSection) els.authLoggedInSection.hidden = true;
+    if (els.settingsAccountSummary) {
+      els.settingsAccountSummary.textContent = "Not signed in (Local preview mode)";
+    }
+    if (els.settingsSignOutButton) els.settingsSignOutButton.hidden = true;
   }
 }
 
@@ -753,9 +809,8 @@ async function handleSignOut() {
   state.partnerName = "Partner";
   updateUserBadge();
   updatePartnerBadge();
+  updateAuthTabUi();
   addActivity("Signed out.");
-  closeSettingsModal();
-  closeInviteModal();
 }
 
 async function syncAuthUser(user) {
@@ -776,6 +831,7 @@ async function syncAuthUser(user) {
   await fetchMySpace();
   updateUserBadge();
   updatePartnerBadge();
+  updateAuthTabUi();
 }
 
 // -------------------------------------------------------------
@@ -953,8 +1009,7 @@ async function handleJoinSpace(inviteCode) {
 
   if (!state.user) {
     sessionStorage.setItem("cozy-space-pending-join", inviteCode);
-    closeInviteModal();
-    openAuthModal();
+    setActiveView("signin");
     showAuthStatus("Sign in with Google, GitHub, or Email to join your partner's space!", "is-info");
     return;
   }
@@ -995,41 +1050,38 @@ async function checkUrlForInvite() {
   const joinCode = params.get("join") || params.get("invite");
   if (!joinCode) return;
 
-  sessionStorage.setItem("cozy-space-pending-join", joinCode.trim().toUpperCase());
+  const cleanCode = joinCode.trim().toUpperCase();
+  sessionStorage.setItem("cozy-space-pending-join", cleanCode);
+
+  if (els.manualInviteCodeInput) {
+    els.manualInviteCodeInput.value = cleanCode;
+  }
+
+  setActiveView("settings");
 
   if (!supabaseClient) return;
 
   const { data } = await supabaseClient.rpc("get_space_preview", {
-    p_invite_code: joinCode.trim().toUpperCase(),
+    p_invite_code: cleanCode,
   });
 
   if (!data || !data.valid) {
-    openJoinModal();
-    if (els.joinHostHeading) els.joinHostHeading.textContent = "Invalid Invite Link";
-    if (els.joinHostMessage) els.joinHostMessage.textContent = data?.error || "This space invite was not found.";
-    if (els.joinFullNotice) els.joinFullNotice.hidden = false;
-    if (els.joinActionSection) els.joinActionSection.hidden = true;
+    if (els.inviteModalHint) {
+      els.inviteModalHint.textContent = data?.error || "This invite code was not found.";
+      els.inviteModalHint.className = "auth-status-hint is-error";
+    }
     return;
   }
 
-  openJoinModal();
-  if (els.joinHostHeading) els.joinHostHeading.textContent = `${data.host_name} invited you!`;
-  if (els.joinHostMessage) els.joinHostMessage.textContent = `Connect to "${data.space_name}". Only you and ${data.host_name} will share hugs, photos, and moments.`;
-  if (els.joinSpaceBadge) els.joinSpaceBadge.textContent = `${data.member_count} of 2 spots taken`;
-
   if (data.is_full) {
-    if (els.joinFullNotice) els.joinFullNotice.hidden = false;
-    if (els.joinActionSection) els.joinActionSection.hidden = true;
+    if (els.inviteModalHint) {
+      els.inviteModalHint.textContent = "This Cozy Space is already full (2/2 members).";
+      els.inviteModalHint.className = "auth-status-hint is-error";
+    }
   } else {
-    if (els.joinFullNotice) els.joinFullNotice.hidden = true;
-    if (els.joinActionSection) els.joinActionSection.hidden = false;
-
-    if (state.user) {
-      if (els.joinLoggedInView) els.joinLoggedInView.hidden = false;
-      if (els.joinLoggedOutView) els.joinLoggedOutView.hidden = true;
-    } else {
-      if (els.joinLoggedInView) els.joinLoggedInView.hidden = true;
-      if (els.joinLoggedOutView) els.joinLoggedOutView.hidden = false;
+    if (els.inviteModalHint) {
+      els.inviteModalHint.textContent = `Invite from ${data.host_name || "partner"} found! Click 'Join Space' to connect.`;
+      els.inviteModalHint.className = "auth-status-hint is-success";
     }
   }
 }
@@ -1286,6 +1338,15 @@ function setActiveView(viewName) {
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-selected", String(isActive));
   });
+
+  if (viewName === "signin") {
+    updateAuthTabUi();
+  } else if (viewName === "settings") {
+    updateInviteModalUi();
+    updateSettingsModalUi();
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 // -------------------------------------------------------------
