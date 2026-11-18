@@ -22,14 +22,13 @@
             <p class="subtitle">A soft little dashboard for hugs, tiny gifts, and real-time love notes.</p>
           </div>
 
-          <div class="profile-strip" aria-label="Couple color themes">
-            <button class="profile-chip profile-chip--active" id="profileMeButton" type="button">
-              <span class="profile-swatch profile-swatch--me" aria-hidden="true"></span>
-              Mine
+          <div class="profile-strip" id="authProfileStrip" aria-label="Account and theme">
+            <button class="profile-chip profile-chip--active" id="openAuthModalButton" type="button" aria-haspopup="dialog">
+              <span class="profile-swatch profile-swatch--me" id="userThemeSwatch" aria-hidden="true"></span>
+              <span id="authButtonLabel">Female ♀ • Sign In</span>
             </button>
-            <button class="profile-chip" id="profileHisButton" type="button">
-              <span class="profile-swatch profile-swatch--his-preview" aria-hidden="true"></span>
-              His color soon
+            <button class="profile-chip profile-chip--signout" id="signOutButton" type="button" hidden>
+              <span>Sign Out</span>
             </button>
           </div>
 
@@ -203,6 +202,82 @@
             <button class="soft-button" type="submit">Save</button>
           </div>
         </form>
+      </div>
+    </section>
+
+    <section class="note-modal" id="authModal" aria-hidden="true" aria-labelledby="authModalTitle" role="dialog">
+      <div class="note-modal__backdrop" data-close-auth-modal></div>
+      <div class="note-modal__sheet auth-sheet">
+        <div class="note-modal__header">
+          <div>
+            <p class="panel-kicker">Account & Aesthetic</p>
+            <h2 id="authModalTitle">Sign In to Cozy Space</h2>
+          </div>
+          <button class="icon-button" type="button" data-close-auth-modal aria-label="Close dialog">&times;</button>
+        </div>
+
+        <div class="auth-content">
+          <!-- Gender & Theme Selection -->
+          <div class="auth-section">
+            <p class="auth-section-title">1. Choose your theme / vibe:</p>
+            <div class="gender-selection-grid">
+              <button class="gender-card is-selected" id="genderFemaleButton" type="button" aria-pressed="true">
+                <span class="gender-swatch gender-swatch--female" aria-hidden="true"></span>
+                <div class="gender-info">
+                  <strong>Female ♀</strong>
+                  <span>Dark & Pinkish</span>
+                </div>
+              </button>
+              <button class="gender-card" id="genderMaleButton" type="button" aria-pressed="false">
+                <span class="gender-swatch gender-swatch--male" aria-hidden="true"></span>
+                <div class="gender-info">
+                  <strong>Male ♂</strong>
+                  <span>Bluish Theme</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Login Methods -->
+          <div class="auth-section">
+            <p class="auth-section-title">2. Sign in to save to backend:</p>
+            
+            <div class="oauth-buttons-list">
+              <button class="oauth-button oauth-button--google" id="googleSignInButton" type="button">
+                <svg class="oauth-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                  <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
+                  <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/>
+                  <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3 0-.8.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15s.7 5.3 1.9 7.7l3.7-2.9z"/>
+                  <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 17C3.7 20.7 7.5 24 12 24z"/>
+                </svg>
+                <span>Continue with Google</span>
+              </button>
+
+              <button class="oauth-button oauth-button--github" id="githubSignInButton" type="button">
+                <svg class="oauth-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                </svg>
+                <span>Continue with GitHub</span>
+              </button>
+            </div>
+
+            <div class="auth-divider">
+              <span>or sign in with email</span>
+            </div>
+
+            <form class="auth-email-form" id="emailAuthForm">
+              <input class="auth-input" id="authEmailInput" type="email" placeholder="Email address" required autocomplete="email" />
+              <input class="auth-input" id="authPasswordInput" type="password" placeholder="Password (min 6 characters)" autocomplete="current-password" />
+              
+              <div class="auth-actions">
+                <button class="soft-button" id="emailSignInButton" type="submit">Sign In</button>
+                <button class="ghost-button" id="emailSignUpButton" type="button">Sign Up</button>
+              </div>
+            </form>
+
+            <p class="auth-status-hint" id="authStatusHint">Select female or male to set your theme, then sign in to sync with your partner.</p>
+          </div>
+        </div>
       </div>
     </section>
 

@@ -11,15 +11,19 @@ const STORAGE_KEYS = {
   photo: "cozy-space-daily-photo",
   plans: "cozy-space-plans",
   theme: "cozy-space-active-theme",
+  gender: "cozy-space-gender",
 };
+
+const savedGender = localStorage.getItem(STORAGE_KEYS.gender) || "female";
 
 const state = {
   activeView: "dashboard",
   totalHugs: 0,
-  lastActionBy: "Mine",
+  lastActionBy: savedGender === "male" ? "Him" : "Her",
   dailyGiftUnlockedAt: null,
   partnerName: "Partner",
-  activeTheme: localStorage.getItem(STORAGE_KEYS.theme) || "me",
+  gender: savedGender,
+  activeTheme: savedGender === "male" ? "male" : "female",
   relationshipStart: new Date(2026, 4, 17, 12),
   notes: [],
   plans: [],
@@ -29,6 +33,8 @@ const state = {
   schedulerMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12),
   dailyPhotoDataUrl: "",
   isLive: false,
+  user: null,
+  profile: null,
 };
 
 const els = {
@@ -70,8 +76,23 @@ const els = {
   photoPreview: document.querySelector("#photoPreview"),
   photoEmpty: document.querySelector("#photoEmpty"),
   photoStatus: document.querySelector("#photoStatus"),
-  profileMeButton: document.querySelector("#profileMeButton"),
-  profileHisButton: document.querySelector("#profileHisButton"),
+  authProfileStrip: document.querySelector("#authProfileStrip"),
+  openAuthModalButton: document.querySelector("#openAuthModalButton"),
+  userThemeSwatch: document.querySelector("#userThemeSwatch"),
+  authButtonLabel: document.querySelector("#authButtonLabel"),
+  signOutButton: document.querySelector("#signOutButton"),
+  authModal: document.querySelector("#authModal"),
+  authModalCloseButtons: document.querySelectorAll("[data-close-auth-modal]"),
+  genderFemaleButton: document.querySelector("#genderFemaleButton"),
+  genderMaleButton: document.querySelector("#genderMaleButton"),
+  googleSignInButton: document.querySelector("#googleSignInButton"),
+  githubSignInButton: document.querySelector("#githubSignInButton"),
+  emailAuthForm: document.querySelector("#emailAuthForm"),
+  authEmailInput: document.querySelector("#authEmailInput"),
+  authPasswordInput: document.querySelector("#authPasswordInput"),
+  emailSignInButton: document.querySelector("#emailSignInButton"),
+  emailSignUpButton: document.querySelector("#emailSignUpButton"),
+  authStatusHint: document.querySelector("#authStatusHint"),
   newNoteButton: document.querySelector("#newNoteButton"),
   noteModal: document.querySelector("#noteModal"),
   noteModalTitle: document.querySelector("#noteModalTitle"),
@@ -94,7 +115,7 @@ async function init() {
   renderDailyPhoto();
   renderNotes();
   wireUiEvents();
-  setTheme(state.activeTheme);
+  setGender(state.gender);
   window.setInterval(renderRelationshipDates, 60 * 1000);
 
   await initSupabase();
@@ -118,8 +139,17 @@ function wireUiEvents() {
     button.addEventListener("click", () => setActiveView(button.dataset.targetView));
   });
 
-  els.profileMeButton?.addEventListener("click", () => setTheme("me"));
-  els.profileHisButton?.addEventListener("click", () => setTheme("his"));
+  els.openAuthModalButton?.addEventListener("click", openAuthModal);
+  els.signOutButton?.addEventListener("click", handleSignOut);
+  els.authModalCloseButtons.forEach((btn) => btn.addEventListener("click", closeAuthModal));
+
+  els.genderFemaleButton?.addEventListener("click", () => setGender("female"));
+  els.genderMaleButton?.addEventListener("click", () => setGender("male"));
+
+  els.googleSignInButton?.addEventListener("click", handleGoogleSignIn);
+  els.githubSignInButton?.addEventListener("click", handleGithubSignIn);
+  els.emailAuthForm?.addEventListener("submit", handleEmailSignIn);
+  els.emailSignUpButton?.addEventListener("click", handleEmailSignUp);
 
   els.hugButton.addEventListener("click", async (event) => {
     await handleHugInteraction(event.currentTarget);
@@ -146,14 +176,293 @@ function wireUiEvents() {
   els.deleteNoteButton.addEventListener("click", deleteCurrentNote);
 
   window.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && els.noteModal.classList.contains("is-open")) {
-      closeNoteModal();
-    }
-
-    if (event.key === "Escape" && els.calendarModal.classList.contains("is-open")) {
-      closeCalendarModal();
+    if (event.key === "Escape") {
+      if (els.authModal?.classList.contains("is-open")) closeAuthModal();
+      if (els.noteModal?.classList.contains("is-open")) closeNoteModal();
+      if (els.calendarModal?.classList.contains("is-open")) closeCalendarModal();
     }
   });
+}
+
+// -------------------------------------------------------------
+// Gender & Theme Management
+// -------------------------------------------------------------
+
+function setGender(gender) {
+  state.gender = gender;
+  localStorage.setItem(STORAGE_KEYS.gender, gender);
+
+  const isFemale = gender === "female";
+  els.genderFemaleButton?.classList.toggle("is-selected", isFemale);
+  els.genderFemaleButton?.setAttribute("aria-pressed", String(isFemale));
+  els.genderMaleButton?.classList.toggle("is-selected", !isFemale);
+  els.genderMaleButton?.setAttribute("aria-pressed", String(!isFemale));
+
+  setTheme(isFemale ? "female" : "male");
+  updateUserBadge();
+
+  if (supabaseClient && state.user) {
+    supabaseClient
+      .from("profiles")
+      .update({
+        gender: gender,
+        theme_color: isFemale ? "#e30b5c" : "#A4D8FF",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", state.user.id)
+      .then(({ error }) => {
+        if (error) console.error("Error saving gender to backend:", error);
+      });
+  }
+}
+
+function setTheme(theme) {
+  const isFemale = theme === "female" || theme === "me";
+  state.activeTheme = isFemale ? "female" : "male";
+  localStorage.setItem(STORAGE_KEYS.theme, state.activeTheme);
+
+  document.body.classList.toggle("theme-female", isFemale);
+  document.body.classList.toggle("theme-me", isFemale);
+  document.body.classList.toggle("theme-male", !isFemale);
+  document.body.classList.toggle("theme-his", !isFemale);
+
+  if (els.userThemeSwatch) {
+    els.userThemeSwatch.className = isFemale
+      ? "profile-swatch profile-swatch--me"
+      : "profile-swatch profile-swatch--his-preview";
+    els.userThemeSwatch.style.background = isFemale
+      ? "linear-gradient(135deg, #2e1e1f 0%, #e30b5c 100%)"
+      : "linear-gradient(135deg, #35393C 0%, #A4D8FF 100%)";
+    els.userThemeSwatch.style.opacity = "1";
+  }
+}
+
+function updateUserBadge() {
+  if (!els.authButtonLabel) return;
+
+  const isFemale = state.gender === "female";
+  const genderIcon = isFemale ? "♀" : "♂";
+
+  if (state.user) {
+    const name = state.profile?.display_name || state.user.email?.split("@")[0] || "Partner";
+    els.authButtonLabel.textContent = `${name} (${genderIcon})`;
+    if (els.signOutButton) els.signOutButton.hidden = false;
+  } else {
+    els.authButtonLabel.textContent = `${isFemale ? "Female ♀" : "Male ♂"} • Sign In`;
+    if (els.signOutButton) els.signOutButton.hidden = true;
+  }
+}
+
+function getActorName() {
+  if (state.profile?.display_name) {
+    return state.profile.display_name;
+  }
+  if (state.user?.email) {
+    return state.user.email.split("@")[0];
+  }
+  return state.gender === "female" ? "Her" : "Him";
+}
+
+// -------------------------------------------------------------
+// Auth Modal & Supabase Auth
+// -------------------------------------------------------------
+
+function openAuthModal() {
+  els.authModal?.classList.add("is-open");
+  els.authModal?.setAttribute("aria-hidden", "false");
+  showAuthStatus("Select female or male to set your theme, then sign in to sync with your partner.", "");
+}
+
+function closeAuthModal() {
+  els.authModal?.classList.remove("is-open");
+  els.authModal?.setAttribute("aria-hidden", "true");
+}
+
+function showAuthStatus(message, statusClass) {
+  if (!els.authStatusHint) return;
+  els.authStatusHint.textContent = message;
+  els.authStatusHint.className = `auth-status-hint ${statusClass || ""}`;
+}
+
+function showAuthError(message) {
+  showAuthStatus(message, "is-error");
+}
+
+async function handleGoogleSignIn() {
+  if (!supabaseClient) {
+    showAuthError("Database connecting, please retry in a moment.");
+    return;
+  }
+
+  showAuthStatus("Redirecting to Google sign in...", "is-info");
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: window.location.origin,
+      data: {
+        gender: state.gender,
+      },
+    },
+  });
+
+  if (error) {
+    showAuthError(error.message);
+  }
+}
+
+async function handleGithubSignIn() {
+  if (!supabaseClient) {
+    showAuthError("Database connecting, please retry in a moment.");
+    return;
+  }
+
+  showAuthStatus("Redirecting to GitHub sign in...", "is-info");
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "github",
+    options: {
+      redirectTo: window.location.origin,
+      data: {
+        gender: state.gender,
+      },
+    },
+  });
+
+  if (error) {
+    showAuthError(error.message);
+  }
+}
+
+async function handleEmailSignIn(event) {
+  event.preventDefault();
+  if (!supabaseClient) {
+    showAuthError("Database connecting, please retry in a moment.");
+    return;
+  }
+
+  const email = els.authEmailInput?.value.trim();
+  const password = els.authPasswordInput?.value;
+
+  if (!email || !password) {
+    showAuthError("Please enter your email and password.");
+    return;
+  }
+
+  showAuthStatus("Signing in...", "is-info");
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    showAuthError(error.message);
+    return;
+  }
+
+  showAuthStatus("Signed in successfully!", "is-success");
+  await syncAuthUser(data.user);
+  setTimeout(closeAuthModal, 700);
+}
+
+async function handleEmailSignUp() {
+  if (!supabaseClient) {
+    showAuthError("Database connecting, please retry in a moment.");
+    return;
+  }
+
+  const email = els.authEmailInput?.value.trim();
+  const password = els.authPasswordInput?.value;
+
+  if (!email || !password) {
+    showAuthError("Enter email and password to create an account.");
+    return;
+  }
+
+  if (password.length < 6) {
+    showAuthError("Password must be at least 6 characters.");
+    return;
+  }
+
+  showAuthStatus("Creating your account...", "is-info");
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        gender: state.gender,
+        display_name: email.split("@")[0],
+      },
+    },
+  });
+
+  if (error) {
+    showAuthError(error.message);
+    return;
+  }
+
+  if (data?.session) {
+    showAuthStatus("Account created & signed in!", "is-success");
+    await syncAuthUser(data.user);
+    setTimeout(closeAuthModal, 700);
+  } else {
+    showAuthStatus("Account created! Please check your email to confirm.", "is-success");
+  }
+}
+
+async function handleSignOut() {
+  if (!supabaseClient) return;
+
+  await supabaseClient.auth.signOut();
+  state.user = null;
+  state.profile = null;
+  updateUserBadge();
+  addActivity("Signed out.");
+}
+
+async function syncAuthUser(user) {
+  if (!user || !supabaseClient) return;
+
+  state.user = user;
+
+  const { data: profile } = await supabaseClient
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile) {
+    state.profile = profile;
+    if (profile.gender && (profile.gender === "female" || profile.gender === "male")) {
+      setGender(profile.gender);
+    } else {
+      await supabaseClient
+        .from("profiles")
+        .update({
+          gender: state.gender,
+          theme_color: state.gender === "female" ? "#e30b5c" : "#A4D8FF",
+        })
+        .eq("id", user.id);
+    }
+  } else {
+    const { data: newProfile } = await supabaseClient
+      .from("profiles")
+      .insert({
+        id: user.id,
+        space_id: DEFAULT_SPACE_ID,
+        display_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Cozy Partner",
+        email: user.email,
+        gender: state.gender,
+        theme_color: state.gender === "female" ? "#e30b5c" : "#A4D8FF",
+      })
+      .select()
+      .maybeSingle();
+
+    if (newProfile) state.profile = newProfile;
+  }
+
+  updateUserBadge();
+  addActivity(`${getActorName()} connected.`);
 }
 
 // -------------------------------------------------------------
@@ -169,6 +478,23 @@ async function initSupabase() {
 
   try {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Check existing auth session
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    if (sessionData?.session?.user) {
+      await syncAuthUser(sessionData.session.user);
+    }
+
+    // Listen for auth changes
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        await syncAuthUser(session.user);
+      } else {
+        state.user = null;
+        state.profile = null;
+        updateUserBadge();
+      }
+    });
 
     // Initial load from cloud
     await Promise.allSettled([
@@ -320,7 +646,7 @@ function subscribeToRealtime() {
         renderStats();
 
         // Trigger remote heart burst if from partner
-        if (sender !== (state.activeTheme === "me" ? "Mine" : "His")) {
+        if (sender !== getActorName()) {
           triggerHapticFeedback(els.heroCard);
           createHeartParticles(els.heroCard);
           addActivity(`${sender} sent a warm hug \u2665`);
@@ -361,7 +687,7 @@ function subscribeToRealtime() {
       { event: "INSERT", schema: "public", table: "activity_logs", filter: `space_id=eq.${DEFAULT_SPACE_ID}` },
       (payload) => {
         const log = payload.new;
-        if (log.actor_name !== (state.activeTheme === "me" ? "Mine" : "His")) {
+        if (log.actor_name !== getActorName()) {
           addActivity(`${log.actor_name}: ${log.details}`);
         }
       }
@@ -370,7 +696,7 @@ function subscribeToRealtime() {
 }
 
 // -------------------------------------------------------------
-// UI Navigation & Theming
+// UI Navigation
 // -------------------------------------------------------------
 
 function setActiveView(viewName) {
@@ -385,22 +711,6 @@ function setActiveView(viewName) {
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-selected", String(isActive));
   });
-}
-
-function setTheme(theme) {
-  state.activeTheme = theme;
-  localStorage.setItem(STORAGE_KEYS.theme, theme);
-
-  document.body.classList.toggle("theme-me", theme === "me");
-  document.body.classList.toggle("theme-his", theme === "his");
-
-  els.profileMeButton?.classList.toggle("profile-chip--active", theme === "me");
-  els.profileHisButton?.classList.toggle("profile-chip--active", theme === "his");
-  els.profileHisButton?.classList.toggle("is-preview-active", theme === "his");
-}
-
-function getActorName() {
-  return state.activeTheme === "me" ? "Mine" : "His";
 }
 
 // -------------------------------------------------------------

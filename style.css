@@ -26,7 +26,8 @@
   font-family: Inter, ui-rounded, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
 }
 
-body.theme-me {
+body.theme-me,
+body.theme-female {
   --color-bg: #2e1e1f;
   --color-bg-blush: rgba(227, 11, 92, 0.12);
   --color-card: rgba(0,0,0,0.16);
@@ -45,7 +46,8 @@ body.theme-me {
   --hero-card-accent: rgba(227, 11, 92, 0.12);
 }
 
-body.theme-his {
+body.theme-his,
+body.theme-male {
   --color-bg: #35393C;
   --color-bg-blush: rgba(164, 216, 255, 0.12);
   --color-card: rgba(0,0,0,0.12);
@@ -1038,3 +1040,202 @@ h2 {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ========================================================
+   Auth & Gender Theme Selection Modal Styles
+   ======================================================== */
+
+.profile-chip--signout {
+  color: var(--color-muted);
+  background: rgba(0, 0, 0, 0.14);
+  font-size: 0.8rem;
+}
+
+.profile-chip--signout:hover {
+  background: rgba(227, 11, 92, 0.2);
+  color: #ff94b8;
+}
+
+.auth-sheet {
+  width: min(100%, 450px);
+  max-height: min(90vh, 760px);
+  overflow-y: auto;
+}
+
+.auth-content {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-section {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-section-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.gender-selection-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.gender-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 2px solid rgba(0, 0, 0, 0.28);
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.14);
+  color: var(--color-ink);
+  text-align: left;
+  transition: all 180ms ease;
+  cursor: pointer;
+}
+
+.gender-card:hover {
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.gender-card.is-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  box-shadow: 0 0 18px var(--interactive-glow);
+}
+
+.gender-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.gender-swatch--female {
+  background: linear-gradient(135deg, #2e1e1f 0%, #e30b5c 100%);
+  box-shadow: 0 0 10px rgba(227, 11, 92, 0.4);
+}
+
+.gender-swatch--male {
+  background: linear-gradient(135deg, #35393C 0%, #A4D8FF 100%);
+  box-shadow: 0 0 10px rgba(164, 216, 255, 0.4);
+}
+
+.gender-info {
+  display: grid;
+  gap: 2px;
+}
+
+.gender-info strong {
+  font-size: 0.94rem;
+  color: var(--color-ink);
+}
+
+.gender-info span {
+  font-size: 0.74rem;
+  color: var(--color-muted);
+}
+
+.oauth-buttons-list {
+  display: grid;
+  gap: 10px;
+}
+
+.oauth-button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 16px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 22px;
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--color-ink);
+  font-size: 0.92rem;
+  font-weight: 800;
+  transition: all 160ms ease;
+  backdrop-filter: blur(10px);
+}
+
+.oauth-button:hover {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: var(--color-primary-soft);
+  transform: translateY(-1px);
+}
+
+.oauth-icon {
+  flex-shrink: 0;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.auth-email-form {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.14);
+  color: var(--color-ink);
+  outline: 0;
+  transition: border-color 160ms ease;
+}
+
+.auth-input:focus {
+  border-color: var(--color-primary);
+}
+
+.auth-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.auth-status-hint {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  line-height: 1.4;
+  text-align: center;
+}
+
+.auth-status-hint.is-error {
+  color: #ff6b6b;
+}
+
+.auth-status-hint.is-success {
+  color: #51cf66;
+}
+
