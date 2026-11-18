@@ -43,6 +43,8 @@ const state = {
   spaceId: savedSpaceId,
   space: null,
   realtimeChannel: null,
+  authMode: "signin",
+  authMethod: "oauth",
 };
 
 const els = {
@@ -107,18 +109,34 @@ const els = {
   authSignOutButton: document.querySelector("#authSignOutButton"),
   signinTabButtonText: document.querySelector("#signinTabButtonText"),
 
-  // Auth Elements
+  // Auth Mode and Method Elements
   authModal: document.querySelector("#authModal"),
   authModalCloseButtons: document.querySelectorAll("[data-close-auth-modal]"),
   genderFemaleButton: document.querySelector("#genderFemaleButton"),
   genderMaleButton: document.querySelector("#genderMaleButton"),
-  googleSignInButton: document.querySelector("#googleSignInButton"),
-  githubSignInButton: document.querySelector("#githubSignInButton"),
+  authModeSignInTab: document.querySelector("#authModeSignInTab"),
+  authModeSignUpTab: document.querySelector("#authModeSignUpTab"),
+  authFormSectionTitle: document.querySelector("#authFormSectionTitle"),
+  authFormSectionSubtitle: document.querySelector("#authFormSectionSubtitle"),
+  authMethodOauthCard: document.querySelector("#authMethodOauthCard"),
+  authMethodEmailCard: document.querySelector("#authMethodEmailCard"),
+  authOauthWindow: document.querySelector("#authOauthWindow"),
+  authEmailWindow: document.querySelector("#authEmailWindow"),
+  oauthSectionTitle: document.querySelector("#oauthSectionTitle"),
+  googleAuthButton: document.querySelector("#googleAuthButton"),
+  githubAuthButton: document.querySelector("#githubAuthButton"),
+  oauthGoogleButtonLabel: document.querySelector("#oauthGoogleButtonLabel"),
+  oauthGithubButtonLabel: document.querySelector("#oauthGithubButtonLabel"),
+  emailSectionTitle: document.querySelector("#emailSectionTitle"),
   emailAuthForm: document.querySelector("#emailAuthForm"),
   authEmailInput: document.querySelector("#authEmailInput"),
   authPasswordInput: document.querySelector("#authPasswordInput"),
-  emailSignInButton: document.querySelector("#emailSignInButton"),
-  emailSignUpButton: document.querySelector("#emailSignUpButton"),
+  emailSubmitButton: document.querySelector("#emailSubmitButton"),
+  authFooterPrompt: document.querySelector("#authFooterPrompt"),
+  authFooterToggleBtn: document.querySelector("#authFooterToggleBtn"),
+  oauthWarningNotice: document.querySelector("#oauthWarningNotice"),
+  oauthWarningText: document.querySelector("#oauthWarningText"),
+  switchToEmailFromWarningButton: document.querySelector("#switchToEmailFromWarningButton"),
   authStatusHint: document.querySelector("#authStatusHint"),
 
   // Invite Modal
@@ -233,10 +251,24 @@ function wireUiEvents() {
   // Sign In Tab & Gender Theme Events
   els.genderFemaleButton?.addEventListener("click", () => setGender("female"));
   els.genderMaleButton?.addEventListener("click", () => setGender("male"));
-  els.googleSignInButton?.addEventListener("click", handleGoogleSignIn);
-  els.githubSignInButton?.addEventListener("click", handleGithubSignIn);
-  els.emailAuthForm?.addEventListener("submit", handleEmailSignIn);
-  els.emailSignUpButton?.addEventListener("click", handleEmailSignUp);
+
+  // Auth Mode (Sign In vs Create Account)
+  els.authModeSignInTab?.addEventListener("click", () => setAuthMode("signin"));
+  els.authModeSignUpTab?.addEventListener("click", () => setAuthMode("signup"));
+  els.authFooterToggleBtn?.addEventListener("click", () => {
+    setAuthMode(state.authMode === "signin" ? "signup" : "signin");
+  });
+
+  // Auth Method (Gmail/GitHub vs Email & Password)
+  els.authMethodOauthCard?.addEventListener("click", () => setAuthMethod("oauth"));
+  els.authMethodEmailCard?.addEventListener("click", () => setAuthMethod("email"));
+  els.switchToEmailFromWarningButton?.addEventListener("click", () => setAuthMethod("email"));
+
+  // Submit and Action Events
+  els.googleAuthButton?.addEventListener("click", () => handleOAuthFlow("google", state.authMode === "signup"));
+  els.githubAuthButton?.addEventListener("click", () => handleOAuthFlow("github", state.authMode === "signup"));
+  els.emailAuthForm?.addEventListener("submit", handleEmailFormSubmit);
+
   els.authGoToMainButton?.addEventListener("click", () => setActiveView("dashboard"));
   els.authSignOutButton?.addEventListener("click", handleSignOut);
 
@@ -446,6 +478,80 @@ function updateAuthTabUi() {
     }
     if (els.settingsSignOutButton) els.settingsSignOutButton.hidden = true;
     if (els.signinTabButtonText) els.signinTabButtonText.textContent = "Sign In";
+    renderAuthSections();
+  }
+}
+
+function setAuthMode(mode) {
+  state.authMode = mode === "signup" ? "signup" : "signin";
+  if (els.oauthWarningNotice) els.oauthWarningNotice.hidden = true;
+  renderAuthSections();
+}
+
+function setAuthMethod(method) {
+  state.authMethod = method === "email" ? "email" : "oauth";
+  if (els.oauthWarningNotice && method === "email") {
+    els.oauthWarningNotice.hidden = true;
+  }
+  renderAuthSections();
+  if (method === "email" && els.authEmailInput) {
+    els.authEmailInput.focus();
+  }
+}
+
+function renderAuthSections() {
+  const isSignIn = state.authMode === "signin";
+  const isOauth = state.authMethod === "oauth";
+
+  // Mode segmented toggle
+  if (els.authModeSignInTab) {
+    els.authModeSignInTab.classList.toggle("is-active", isSignIn);
+    els.authModeSignInTab.setAttribute("aria-selected", String(isSignIn));
+  }
+  if (els.authModeSignUpTab) {
+    els.authModeSignUpTab.classList.toggle("is-active", !isSignIn);
+    els.authModeSignUpTab.setAttribute("aria-selected", String(!isSignIn));
+  }
+
+  // Method selector cards
+  if (els.authMethodOauthCard) {
+    els.authMethodOauthCard.classList.toggle("is-active", isOauth);
+    els.authMethodOauthCard.setAttribute("aria-selected", String(isOauth));
+  }
+  if (els.authMethodEmailCard) {
+    els.authMethodEmailCard.classList.toggle("is-active", !isOauth);
+    els.authMethodEmailCard.setAttribute("aria-selected", String(!isOauth));
+  }
+
+  // Windows visibility
+  if (els.authOauthWindow) {
+    els.authOauthWindow.hidden = !isOauth;
+  }
+  if (els.authEmailWindow) {
+    els.authEmailWindow.hidden = isOauth;
+  }
+
+  // Dynamic header text & button labels
+  if (isSignIn) {
+    if (els.authFormSectionTitle) els.authFormSectionTitle.textContent = "Sign In to Cozy Space";
+    if (els.authFormSectionSubtitle) els.authFormSectionSubtitle.textContent = "Select whether to sign in using Gmail/GitHub or Email and Password.";
+    if (els.oauthSectionTitle) els.oauthSectionTitle.textContent = "Sign In using Gmail or GitHub";
+    if (els.oauthGoogleButtonLabel) els.oauthGoogleButtonLabel.textContent = "Sign In with Google";
+    if (els.oauthGithubButtonLabel) els.oauthGithubButtonLabel.textContent = "Sign In with GitHub";
+    if (els.emailSectionTitle) els.emailSectionTitle.textContent = "Sign In with Email & Password";
+    if (els.emailSubmitButton) els.emailSubmitButton.textContent = "Sign In";
+    if (els.authFooterPrompt) els.authFooterPrompt.textContent = "Don't have an account yet?";
+    if (els.authFooterToggleBtn) els.authFooterToggleBtn.textContent = "Create Account";
+  } else {
+    if (els.authFormSectionTitle) els.authFormSectionTitle.textContent = "Create an Account";
+    if (els.authFormSectionSubtitle) els.authFormSectionSubtitle.textContent = "Select whether to create your account using Gmail/GitHub or Email and Password.";
+    if (els.oauthSectionTitle) els.oauthSectionTitle.textContent = "Create Account using Gmail or GitHub";
+    if (els.oauthGoogleButtonLabel) els.oauthGoogleButtonLabel.textContent = "Create Account with Google";
+    if (els.oauthGithubButtonLabel) els.oauthGithubButtonLabel.textContent = "Create Account with GitHub";
+    if (els.emailSectionTitle) els.emailSectionTitle.textContent = "Create Account with Email & Password";
+    if (els.emailSubmitButton) els.emailSubmitButton.textContent = "Create Account";
+    if (els.authFooterPrompt) els.authFooterPrompt.textContent = "Already have an account?";
+    if (els.authFooterToggleBtn) els.authFooterToggleBtn.textContent = "Sign In";
   }
 }
 
@@ -594,75 +700,76 @@ function showJoinStatus(message, statusClass) {
 // Auth Logic (Google, GitHub, Email)
 // -------------------------------------------------------------
 
-async function handleGoogleSignIn() {
+async function handleOAuthFlow(provider, isSignUp = false) {
   if (!supabaseClient) {
     showAuthError("Database connecting, please retry in a moment.");
     return;
   }
 
-  const pendingInvite = sessionStorage.getItem("cozy-space-pending-join") || undefined;
-  showAuthStatus("Connecting to Google authentication...", "is-info");
+  const providerName = provider === "google" ? "Google" : "GitHub";
+  const actionText = isSignUp ? "Creating account with" : "Signing in with";
+  showAuthStatus(`${actionText} ${providerName}...`, "is-info");
 
+  // Pre-check if provider is enabled in Supabase to avoid raw 400 JSON browser screen
+  try {
+    const precheck = await fetch(`${SUPABASE_URL}/auth/v1/authorize?provider=${provider}`, {
+      method: "GET",
+      headers: { apikey: SUPABASE_KEY },
+    });
+
+    if (precheck.status === 400) {
+      const errJson = await precheck.json();
+      if (errJson.msg && errJson.msg.includes("provider is not enabled")) {
+        showAuthError(
+          `${providerName} authentication is not enabled yet in your Supabase project (Auth > Providers > ${providerName}).`
+        );
+        if (els.oauthWarningNotice) {
+          els.oauthWarningNotice.hidden = false;
+          if (els.oauthWarningText) {
+            els.oauthWarningText.innerHTML = `<strong>${providerName} is not enabled yet in your Supabase project.</strong><br>In your open Supabase dashboard tab, go to <em>Authentication &gt; Providers &gt; ${providerName}</em>, toggle to Enabled and enter credentials, or use <strong>Email &amp; Password</strong> below.`;
+          }
+        }
+        return;
+      }
+    }
+  } catch (fetchErr) {
+    // If CORS or network prevents pre-check, continue to standard oauth flow
+  }
+
+  const pendingInvite = sessionStorage.getItem("cozy-space-pending-join") || undefined;
   const { error } = await supabaseClient.auth.signInWithOAuth({
-    provider: "google",
+    provider: provider,
     options: {
       redirectTo: window.location.origin,
-      queryParams: {
-        access_type: "offline",
-        prompt: "consent",
-      },
+      queryParams: provider === "google" ? { access_type: "offline", prompt: "consent" } : undefined,
       data: {
         gender: state.gender,
         invite_code: pendingInvite,
+        flow_type: isSignUp ? "signup" : "signin",
       },
     },
   });
 
   if (error) {
-    console.error("Google OAuth error:", error);
-    if (
-      error.message?.includes("provider is not enabled") ||
-      error.message?.includes("unsupported_provider") ||
-      error.message?.includes("validation_failed")
-    ) {
-      showAuthError("Google OAuth is not yet activated in your Supabase Dashboard (Auth > Providers > Google). Use Email Sign In below, or enter your Google Client ID & Secret in Supabase.");
-    } else {
-      showAuthError(error.message);
-    }
+    console.error("OAuth error:", error);
+    showAuthError(error.message);
   }
 }
 
+async function handleGoogleSignIn() {
+  await handleOAuthFlow("google", state.authMode === "signup");
+}
+
 async function handleGithubSignIn() {
-  if (!supabaseClient) {
-    showAuthError("Database connecting, please retry in a moment.");
-    return;
-  }
+  await handleOAuthFlow("github", state.authMode === "signup");
+}
 
-  const pendingInvite = sessionStorage.getItem("cozy-space-pending-join") || undefined;
-  showAuthStatus("Connecting to GitHub authentication...", "is-info");
-
-  const { error } = await supabaseClient.auth.signInWithOAuth({
-    provider: "github",
-    options: {
-      redirectTo: window.location.origin,
-      data: {
-        gender: state.gender,
-        invite_code: pendingInvite,
-      },
-    },
-  });
-
-  if (error) {
-    console.error("GitHub OAuth error:", error);
-    if (
-      error.message?.includes("provider is not enabled") ||
-      error.message?.includes("unsupported_provider") ||
-      error.message?.includes("validation_failed")
-    ) {
-      showAuthError("GitHub OAuth is not yet activated in your Supabase Dashboard (Auth > Providers > GitHub). Use Email Sign In below, or enter your GitHub Client ID & Secret in Supabase.");
-    } else {
-      showAuthError(error.message);
-    }
+function handleEmailFormSubmit(event) {
+  event?.preventDefault();
+  if (state.authMode === "signup") {
+    handleEmailSignUp(event);
+  } else {
+    handleEmailSignIn(event);
   }
 }
 
@@ -699,7 +806,8 @@ async function handleEmailSignIn(event) {
   setActiveView("dashboard");
 }
 
-async function handleEmailSignUp() {
+async function handleEmailSignUp(event) {
+  event?.preventDefault();
   if (!supabaseClient) {
     showAuthError("Database connecting, please retry in a moment.");
     return;
