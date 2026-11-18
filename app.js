@@ -21,9 +21,9 @@ const savedHaptics = localStorage.getItem(STORAGE_KEYS.haptics) !== "false";
 const savedSpaceId = localStorage.getItem(STORAGE_KEYS.spaceId) || DEFAULT_SPACE_ID;
 
 const state = {
-  activeView: "dashboard",
+  activeView: "signin",
   totalHugs: 0,
-  lastActionBy: savedGender === "male" ? "Him" : "Her",
+  lastActionBy: "Partner",
   dailyGiftUnlockedAt: null,
   partnerName: "Partner",
   gender: savedGender,
@@ -47,6 +47,7 @@ const state = {
 
 const els = {
   appShell: document.querySelector("#appShell"),
+  bottomTabs: document.querySelector("#bottomTabs"),
   heroCard: document.querySelector("#heroCard"),
   views: document.querySelectorAll(".view"),
   tabButtons: document.querySelectorAll(".tab-button"),
@@ -104,6 +105,7 @@ const els = {
   authProfilePartnerTag: document.querySelector("#authProfilePartnerTag"),
   authGoToMainButton: document.querySelector("#authGoToMainButton"),
   authSignOutButton: document.querySelector("#authSignOutButton"),
+  signinTabButtonText: document.querySelector("#signinTabButtonText"),
 
   // Auth Elements
   authModal: document.querySelector("#authModal"),
@@ -196,6 +198,10 @@ async function init() {
   updateHapticsUi();
   updatePartnerBadge();
   window.setInterval(renderRelationshipDates, 60 * 1000);
+
+  // Default to Sign In page first and keep tabs hidden until authenticated
+  if (els.bottomTabs) els.bottomTabs.hidden = true;
+  setActiveView("signin");
 
   await initSupabase();
   await checkUrlForInvite();
@@ -365,14 +371,13 @@ function updateUserBadge() {
   if (!els.authButtonLabel) return;
 
   const isFemale = state.gender === "female";
-  const genderIcon = isFemale ? "♀" : "♂";
 
   if (state.user) {
-    const name = state.profile?.display_name || state.user.email?.split("@")[0] || "Partner";
-    els.authButtonLabel.textContent = `${name} (${genderIcon})`;
+    const name = state.profile?.display_name || state.user.email?.split("@")[0] || "User";
+    els.authButtonLabel.textContent = `${name} (${isFemale ? "Female" : "Male"})`;
     if (els.settingsSignOutButton) els.settingsSignOutButton.hidden = false;
   } else {
-    els.authButtonLabel.textContent = `${isFemale ? "Female ♀" : "Male ♂"} • Sign In`;
+    els.authButtonLabel.textContent = `${isFemale ? "Female" : "Male"} Sign In`;
     if (els.settingsSignOutButton) els.settingsSignOutButton.hidden = true;
   }
   updateAuthTabUi();
@@ -383,16 +388,13 @@ function updatePartnerBadge() {
 
   if (state.space && state.space.member_count >= 2) {
     const partner = state.space.members?.find((m) => !m.is_me);
-    const partnerName = partner?.display_name || (partner?.gender === "male" ? "Him ♂" : "Her ♀");
+    const partnerName = partner?.display_name || (partner?.gender === "male" ? "Partner (Male)" : "Partner (Female)");
     state.partnerName = partnerName;
-    els.partnerStatusLabel.textContent = `💑 ${partnerName}`;
-    if (els.partnerChipIcon) els.partnerChipIcon.textContent = "💑";
+    els.partnerStatusLabel.textContent = `Partner: ${partnerName}`;
   } else if (state.user) {
     els.partnerStatusLabel.textContent = "Invite Partner (1/2)";
-    if (els.partnerChipIcon) els.partnerChipIcon.textContent = "💌";
   } else {
     els.partnerStatusLabel.textContent = "Invite Partner (1/2)";
-    if (els.partnerChipIcon) els.partnerChipIcon.textContent = "💌";
   }
   updateAuthTabUi();
 }
@@ -419,22 +421,23 @@ function updateAuthTabUi() {
     if (els.authLoggedInSection) els.authLoggedInSection.hidden = false;
     if (els.authProfileEmail) els.authProfileEmail.textContent = state.user.email || "Active User";
     if (els.authProfileAvatar) {
-      els.authProfileAvatar.textContent = isFemale ? "♀" : "♂";
+      els.authProfileAvatar.textContent = isFemale ? "F" : "M";
       els.authProfileAvatar.style.background = isFemale ? "#e30b5c" : "#A4D8FF";
       els.authProfileAvatar.style.color = isFemale ? "#fff" : "#1a2530";
     }
     if (els.authProfileThemeTag) {
-      els.authProfileThemeTag.textContent = isFemale ? "Female ♀ Aesthetic Active" : "Male ♂ Aesthetic Active";
+      els.authProfileThemeTag.textContent = isFemale ? "Female Palette Active" : "Male Palette Active";
     }
     if (els.authProfilePartnerTag) {
       els.authProfilePartnerTag.textContent = state.space?.member_count >= 2
-        ? `Connected with ${state.partnerName} 💑`
+        ? `Connected with ${state.partnerName}`
         : "Partner: Waiting for invite (1/2)";
     }
     if (els.settingsAccountSummary) {
       els.settingsAccountSummary.textContent = `Signed in as ${state.user.email} (Supabase Cloud connected)`;
     }
     if (els.settingsSignOutButton) els.settingsSignOutButton.hidden = false;
+    if (els.signinTabButtonText) els.signinTabButtonText.textContent = "Account";
   } else {
     if (els.authLoggedOutSection) els.authLoggedOutSection.hidden = false;
     if (els.authLoggedInSection) els.authLoggedInSection.hidden = true;
@@ -442,6 +445,7 @@ function updateAuthTabUi() {
       els.settingsAccountSummary.textContent = "Not signed in (Local preview mode)";
     }
     if (els.settingsSignOutButton) els.settingsSignOutButton.hidden = true;
+    if (els.signinTabButtonText) els.signinTabButtonText.textContent = "Sign In";
   }
 }
 
@@ -452,7 +456,7 @@ function getActorName() {
   if (state.user?.email) {
     return state.user.email.split("@")[0];
   }
-  return state.gender === "male" ? "Him" : "Her";
+  return state.gender === "male" ? "Partner" : "You";
 }
 
 // -------------------------------------------------------------
@@ -488,7 +492,7 @@ function testHapticVibration() {
     setHaptics(true);
   }
   triggerHapticFeedback(els.heroCard, [60, 50, 80]);
-  addActivity("Haptic vibration tested 📳");
+  addActivity("Haptic vibration tested.");
 }
 
 function triggerHapticFeedback(fallbackTarget, pattern = [40, 50, 80]) {
@@ -597,12 +601,16 @@ async function handleGoogleSignIn() {
   }
 
   const pendingInvite = sessionStorage.getItem("cozy-space-pending-join") || undefined;
-  showAuthStatus("Redirecting to Google sign in...", "is-info");
+  showAuthStatus("Connecting to Google authentication...", "is-info");
 
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: "google",
     options: {
       redirectTo: window.location.origin,
+      queryParams: {
+        access_type: "offline",
+        prompt: "consent",
+      },
       data: {
         gender: state.gender,
         invite_code: pendingInvite,
@@ -611,7 +619,16 @@ async function handleGoogleSignIn() {
   });
 
   if (error) {
-    showAuthError(error.message);
+    console.error("Google OAuth error:", error);
+    if (
+      error.message?.includes("provider is not enabled") ||
+      error.message?.includes("unsupported_provider") ||
+      error.message?.includes("validation_failed")
+    ) {
+      showAuthError("Google OAuth is not yet activated in your Supabase Dashboard (Auth > Providers > Google). Use Email Sign In below, or enter your Google Client ID & Secret in Supabase.");
+    } else {
+      showAuthError(error.message);
+    }
   }
 }
 
@@ -622,7 +639,7 @@ async function handleGithubSignIn() {
   }
 
   const pendingInvite = sessionStorage.getItem("cozy-space-pending-join") || undefined;
-  showAuthStatus("Redirecting to GitHub sign in...", "is-info");
+  showAuthStatus("Connecting to GitHub authentication...", "is-info");
 
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: "github",
@@ -636,7 +653,16 @@ async function handleGithubSignIn() {
   });
 
   if (error) {
-    showAuthError(error.message);
+    console.error("GitHub OAuth error:", error);
+    if (
+      error.message?.includes("provider is not enabled") ||
+      error.message?.includes("unsupported_provider") ||
+      error.message?.includes("validation_failed")
+    ) {
+      showAuthError("GitHub OAuth is not yet activated in your Supabase Dashboard (Auth > Providers > GitHub). Use Email Sign In below, or enter your GitHub Client ID & Secret in Supabase.");
+    } else {
+      showAuthError(error.message);
+    }
   }
 }
 
@@ -667,9 +693,10 @@ async function handleEmailSignIn(event) {
     return;
   }
 
-  showAuthStatus("Signed in successfully!", "is-success");
+  showAuthStatus("Signed in successfully.", "is-success");
   await syncAuthUser(data.user);
-  setTimeout(closeAuthModal, 700);
+  if (els.bottomTabs) els.bottomTabs.hidden = false;
+  setActiveView("dashboard");
 }
 
 async function handleEmailSignUp() {
@@ -711,12 +738,24 @@ async function handleEmailSignUp() {
     return;
   }
 
-  if (data?.session) {
-    showAuthStatus("Account created & signed in!", "is-success");
+  if (data?.session && data?.user) {
+    showAuthStatus("Account created & signed in.", "is-success");
     await syncAuthUser(data.user);
-    setTimeout(closeAuthModal, 700);
-  } else {
-    showAuthStatus("Account created! Please check your email to confirm.", "is-success");
+    if (els.bottomTabs) els.bottomTabs.hidden = false;
+    setActiveView("dashboard");
+  } else if (data?.user) {
+    const { data: signInData, error: signInErr } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (!signInErr && signInData?.user) {
+      showAuthStatus("Account created & signed in.", "is-success");
+      await syncAuthUser(signInData.user);
+      if (els.bottomTabs) els.bottomTabs.hidden = false;
+      setActiveView("dashboard");
+    } else {
+      showAuthStatus("Account created. Please click Sign In with your credentials.", "is-success");
+    }
   }
 }
 
@@ -807,6 +846,8 @@ async function handleSignOut() {
   state.profile = null;
   state.space = null;
   state.partnerName = "Partner";
+  if (els.bottomTabs) els.bottomTabs.hidden = true;
+  setActiveView("signin");
   updateUserBadge();
   updatePartnerBadge();
   updateAuthTabUi();
@@ -829,6 +870,7 @@ async function syncAuthUser(user) {
   }
 
   await fetchMySpace();
+  if (els.bottomTabs) els.bottomTabs.hidden = false;
   updateUserBadge();
   updatePartnerBadge();
   updateAuthTabUi();
@@ -900,21 +942,21 @@ function updateInviteModalUi() {
       state.space.members.forEach((m) => {
         const pill = document.createElement("span");
         pill.className = "space-member-pill";
-        const icon = m.gender === "male" ? "♂" : "♀";
-        pill.innerHTML = `<span class="gender-swatch" style="background:${m.theme_color || '#e30b5c'}; width:10px; height:10px; border-radius:50%; display:inline-block;"></span>${m.display_name} (${icon})${m.is_me ? " • You" : ""}`;
+        const icon = m.gender === "male" ? "Male" : "Female";
+        pill.innerHTML = `<span class="gender-swatch" style="background:${m.theme_color || '#e30b5c'}; width:10px; height:10px; border-radius:50%; display:inline-block;"></span>${m.display_name} (${icon})${m.is_me ? " (You)" : ""}`;
         els.spaceMembersList.appendChild(pill);
       });
     } else {
       const pill = document.createElement("span");
       pill.className = "space-member-pill";
-      pill.textContent = `You (${state.gender === "male" ? "♂" : "♀"})`;
+      pill.textContent = `You (${state.gender === "male" ? "Male" : "Female"})`;
       els.spaceMembersList.appendChild(pill);
     }
 
     if (!isFull) {
       const emptyPill = document.createElement("span");
       emptyPill.className = "space-member-pill space-member-pill--empty";
-      emptyPill.innerHTML = "<span>💌</span> Waiting for partner to join...";
+      emptyPill.innerHTML = "Waiting for partner to join...";
       els.spaceMembersList.appendChild(emptyPill);
     }
   }
@@ -926,7 +968,7 @@ function updateSettingsModalUi() {
   if (els.settingsAccountSummary) {
     if (state.user) {
       const code = state.space?.invite_code || "Active";
-      els.settingsAccountSummary.textContent = `${state.user.email} • Space Code: ${code}`;
+      els.settingsAccountSummary.textContent = `${state.user.email} | Space Code: ${code}`;
     } else {
       els.settingsAccountSummary.textContent = "Not signed in (Local preview mode)";
     }
@@ -948,14 +990,14 @@ async function copyInviteLink() {
     await navigator.clipboard.writeText(link);
     triggerHapticFeedback(els.heroCard, 30);
     const origText = els.copyInviteLinkButton.textContent;
-    els.copyInviteLinkButton.textContent = "Copied! ✨";
+    els.copyInviteLinkButton.textContent = "Copied";
     setTimeout(() => {
       els.copyInviteLinkButton.textContent = origText;
     }, 2000);
   } catch (err) {
     els.inviteLinkInput?.select();
     document.execCommand("copy");
-    els.copyInviteLinkButton.textContent = "Copied! ✨";
+    els.copyInviteLinkButton.textContent = "Copied";
   }
 }
 
@@ -967,7 +1009,7 @@ async function shareInvite() {
     try {
       await navigator.share({
         title: "Cozy Space - Private Space for Two",
-        text: "Join our private Cozy Space for hugs, daily photos, and love notes: ",
+        text: "Join our private Cozy Space: ",
         url: link,
       });
       triggerHapticFeedback(els.heroCard, 30);
@@ -987,7 +1029,7 @@ async function copyInviteCodeOnly() {
     await navigator.clipboard.writeText(code);
     triggerHapticFeedback(els.heroCard, 30);
     const orig = els.copyInviteCodeOnlyButton.textContent;
-    els.copyInviteCodeOnlyButton.textContent = "Code Copied! ✨";
+    els.copyInviteCodeOnlyButton.textContent = "Code Copied";
     setTimeout(() => {
       els.copyInviteCodeOnlyButton.textContent = orig;
     }, 2000);
@@ -1010,11 +1052,11 @@ async function handleJoinSpace(inviteCode) {
   if (!state.user) {
     sessionStorage.setItem("cozy-space-pending-join", inviteCode);
     setActiveView("signin");
-    showAuthStatus("Sign in with Google, GitHub, or Email to join your partner's space!", "is-info");
+    showAuthStatus("Sign in with Google, GitHub, or Email to join your partner's space.", "is-info");
     return;
   }
 
-  showJoinStatus("Connecting to partner's space...", "is-info");
+  showJoinStatus("Connecting to partner space...", "is-info");
 
   const { data, error } = await supabaseClient.rpc("join_space_by_invite", {
     p_invite_code: inviteCode.trim().toUpperCase(),
@@ -1042,7 +1084,7 @@ async function handleJoinSpace(inviteCode) {
   triggerHapticFeedback(els.heroCard, [50, 60, 90]);
   closeJoinModal();
   closeInviteModal();
-  addActivity("Connected to partner's space! 💑");
+  addActivity("Connected to partner space.");
 }
 
 async function checkUrlForInvite() {
@@ -1104,17 +1146,27 @@ async function initSupabase() {
     const { data: sessionData } = await supabaseClient.auth.getSession();
     if (sessionData?.session?.user) {
       await syncAuthUser(sessionData.session.user);
+      if (els.bottomTabs) els.bottomTabs.hidden = false;
+      setActiveView("dashboard");
+    } else {
+      if (els.bottomTabs) els.bottomTabs.hidden = true;
+      setActiveView("signin");
     }
 
     // Listen for auth changes
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         await syncAuthUser(session.user);
+        if (els.bottomTabs) els.bottomTabs.hidden = false;
+        setActiveView("dashboard");
       } else {
         state.user = null;
         state.profile = null;
+        if (els.bottomTabs) els.bottomTabs.hidden = true;
+        setActiveView("signin");
         updateUserBadge();
         updatePartnerBadge();
+        updateAuthTabUi();
       }
     });
 
@@ -1279,7 +1331,7 @@ function subscribeToRealtime() {
         if (sender !== getActorName()) {
           triggerHapticFeedback(els.heroCard, [40, 50, 80]);
           createHeartParticles(els.heroCard);
-          addActivity(`${sender} sent a warm hug ♥`);
+          addActivity(`${sender} sent a warm hug`);
         }
       }
     )
@@ -1361,7 +1413,7 @@ async function handleHugInteraction(sourceElement) {
   state.totalHugs += 1;
   state.lastActionBy = actor;
   renderStats();
-  addActivity("You sent a warm hug ♥");
+  addActivity("You sent a warm hug");
 
   if (supabaseClient && state.spaceId) {
     try {
@@ -1376,7 +1428,7 @@ async function handleHugInteraction(sourceElement) {
         actor_id: state.user?.id || null,
         actor_name: actor,
         action_type: "hug_sent",
-        details: "Sent a warm hug ♥",
+        details: "Sent a warm hug",
       });
     } catch (e) {
       console.error("Failed to persist hug to cloud:", e);
@@ -1693,17 +1745,15 @@ function createHeartParticles(sourceElement) {
   const originY = rect.top + rect.height / 2;
 
   for (let index = 0; index < 12; index += 1) {
-    const heart = document.createElement("span");
-    heart.className = "heart-particle";
-    heart.textContent = "♥";
-    heart.style.left = `${originX}px`;
-    heart.style.top = `${originY}px`;
-    heart.style.setProperty("--drift", `${randomBetween(-110, 110)}px`);
-    heart.style.setProperty("--spin", `${randomBetween(-28, 28)}deg`);
-    heart.style.animationDelay = `${index * 24}ms`;
+    const dot = document.createElement("span");
+    dot.className = "hug-particle-dot";
+    dot.style.left = `${originX}px`;
+    dot.style.top = `${originY}px`;
+    dot.style.setProperty("--drift", `${randomBetween(-90, 90)}px`);
+    dot.style.animationDelay = `${index * 24}ms`;
 
-    els.particleLayer.appendChild(heart);
-    heart.addEventListener("animationend", () => heart.remove(), { once: true });
+    els.particleLayer.appendChild(dot);
+    dot.addEventListener("animationend", () => dot.remove(), { once: true });
   }
 }
 

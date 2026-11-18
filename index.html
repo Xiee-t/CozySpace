@@ -10,10 +10,134 @@
   <body class="theme-me">
     <main class="app-shell" id="appShell">
       <!-- ======================================================== -->
-      <!-- TAB 1: MAIN PAGE (THE PRIVATE COUPLE SANCTUARY)          -->
+      <!-- VIEW 1: SIGN IN PAGE (SEEN FIRST UPON VISITING)          -->
       <!-- ======================================================== -->
-      <section class="view is-active" id="dashboardView" data-view="dashboard" aria-labelledby="dashboardTitle">
-        <!-- Hero Card with Hugs & Partner Status -->
+      <section class="view is-active" id="signinView" data-view="signin" aria-labelledby="signinTitle">
+        <!-- Dual Aesthetic Header Card -->
+        <article class="hero-card visual-container auth-hero-card">
+          <div class="auth-theme-banner">
+            <!-- Female & Male Theme Palette Preview -->
+            <div class="dual-theme-preview" aria-hidden="true">
+              <span class="theme-half theme-half--female">
+                <span class="theme-glow-dot theme-glow-dot--pink"></span>
+                <span class="theme-half-label">Female Palette</span>
+              </span>
+              <span class="theme-divider-line"></span>
+              <span class="theme-half theme-half--male">
+                <span class="theme-glow-dot theme-glow-dot--blue"></span>
+                <span class="theme-half-label">Male Palette</span>
+              </span>
+            </div>
+
+            <div class="title-block">
+              <p class="eyebrow">Secure Authentication</p>
+              <h1 id="signinTitle">Sign In to Cozy Space</h1>
+              <p class="subtitle">Select your aesthetic theme and sign in to access your shared private sanctuary.</p>
+            </div>
+          </div>
+        </article>
+
+        <!-- Step 1: Choose Theme Palette (Connected to Female & Male Theme) -->
+        <article class="panel theme-select-panel">
+          <div class="panel-kicker">Step 1: Visual Aesthetic</div>
+          <h2 class="panel-section-title">Select Your Theme</h2>
+          <p class="panel-note" style="margin-bottom: 14px;">Choose your visual side to customize your workspace colors.</p>
+
+          <div class="gender-selection-grid auth-gender-grid">
+            <button class="gender-card gender-card--female is-selected" id="genderFemaleButton" type="button" aria-pressed="true">
+              <div class="gender-card-header">
+                <span class="gender-swatch gender-swatch--female" aria-hidden="true"></span>
+                <span class="gender-pill gender-pill--female">Female</span>
+              </div>
+              <div class="gender-info">
+                <strong>Female Aesthetic</strong>
+                <span>Dark Wine & Soft Rose Palette</span>
+              </div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+
+            <button class="gender-card gender-card--male" id="genderMaleButton" type="button" aria-pressed="false">
+              <div class="gender-card-header">
+                <span class="gender-swatch gender-swatch--male" aria-hidden="true"></span>
+                <span class="gender-pill gender-pill--male">Male</span>
+              </div>
+              <div class="gender-info">
+                <strong>Male Aesthetic</strong>
+                <span>Charcoal Slate & Ice Blue Palette</span>
+              </div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+          </div>
+        </article>
+
+        <!-- Step 2: Authentication & Cloud Sync -->
+        <article class="panel auth-panel">
+          <div class="panel-kicker">Step 2: Authentication</div>
+
+          <!-- When Logged Out: Sign In Form -->
+          <div id="authLoggedOutSection">
+            <h2 class="panel-section-title">Sign In or Create Account</h2>
+            <p class="panel-note" style="margin-bottom: 16px;">Authenticate to synchronize data securely with Supabase cloud.</p>
+
+            <div class="oauth-buttons-list">
+              <button class="oauth-button oauth-button--google" id="googleSignInButton" type="button">
+                <svg class="oauth-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                  <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
+                  <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/>
+                  <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3 0-.8.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15s.7 5.3 1.9 7.7l3.7-2.9z"/>
+                  <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 17C3.7 20.7 7.5 24 12 24z"/>
+                </svg>
+                <span>Continue with Google</span>
+              </button>
+
+              <button class="oauth-button oauth-button--github" id="githubSignInButton" type="button">
+                <svg class="oauth-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                </svg>
+                <span>Continue with GitHub</span>
+              </button>
+            </div>
+
+            <div class="auth-divider">
+              <span>or continue with email</span>
+            </div>
+
+            <form class="auth-email-form" id="emailAuthForm">
+              <input class="auth-input" id="authEmailInput" type="email" placeholder="Email address" required autocomplete="email" />
+              <input class="auth-input" id="authPasswordInput" type="password" placeholder="Password (minimum 6 characters)" autocomplete="current-password" />
+              
+              <div class="auth-actions">
+                <button class="soft-button" id="emailSignInButton" type="submit">Sign In</button>
+                <button class="ghost-button" id="emailSignUpButton" type="button">Create Account</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- When Logged In: Profile Card -->
+          <div id="authLoggedInSection" hidden>
+            <div class="auth-profile-card">
+              <div class="auth-avatar" id="authProfileAvatar">F</div>
+              <div class="auth-profile-details">
+                <strong id="authProfileEmail">user@example.com</strong>
+                <span class="auth-profile-status" id="authProfileThemeTag">Female Aesthetic Active</span>
+                <span class="auth-profile-partner" id="authProfilePartnerTag">Partner: Waiting for invite (1/2)</span>
+              </div>
+            </div>
+            <div class="auth-actions" style="margin-top: 14px;">
+              <button class="soft-button" id="authGoToMainButton" type="button">Access Main Space</button>
+              <button class="ghost-button" id="authSignOutButton" type="button">Sign Out</button>
+            </div>
+          </div>
+
+          <p class="auth-status-hint" id="authStatusHint">Select your aesthetic theme and sign in to begin.</p>
+        </article>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 2: MAIN PAGE (AVAILABLE UPON SIGNING IN)            -->
+      <!-- ======================================================== -->
+      <section class="view" id="dashboardView" data-view="dashboard" aria-labelledby="dashboardTitle">
+        <!-- Hero Card with Hugs & Metrics -->
         <article class="hero-card visual-container" id="heroCard">
           <div class="status-row">
             <span class="status-pill" id="connectionStatus">Connecting...</span>
@@ -21,37 +145,23 @@
           </div>
 
           <div class="title-block">
-            <p class="eyebrow">Private space for two</p>
+            <p class="eyebrow">Private Space for Two</p>
             <h1 id="dashboardTitle">Cozy Space</h1>
-            <p class="subtitle">A soft little sanctuary for hugs, shared memories, and real-time love notes.</p>
+            <p class="subtitle">A shared sanctuary for connection, milestones, and real-time notes.</p>
           </div>
 
-          <!-- Quick Navigation Chips directly to Sign In and Settings Tabs -->
-          <div class="profile-strip" id="authProfileStrip" aria-label="Quick Navigation">
-            <button class="profile-chip profile-chip--active" id="openAuthModalButton" type="button" title="Go to Sign In & Theme Tab">
-              <span class="profile-swatch profile-swatch--me" id="userThemeSwatch" aria-hidden="true"></span>
-              <span id="authButtonLabel">Female ♀ • Sign In</span>
-            </button>
-            <button class="profile-chip profile-chip--partner" id="openInviteModalButton" type="button" title="Go to Partner & Invite Settings">
-              <span class="partner-chip-icon" id="partnerChipIcon" aria-hidden="true">💌</span>
-              <span id="partnerStatusLabel">Invite Partner (1/2)</span>
-            </button>
-            <button class="profile-chip profile-chip--settings" id="openSettingsModalButton" type="button" title="Go to Settings Tab">
-              <span class="settings-chip-icon" aria-hidden="true">⚙️</span>
-              <span>Settings</span>
-            </button>
-          </div>
-
-          <!-- Hug Counter & Send Hug Button -->
+          <!-- Clean Metrics without male sign in, invite or settings buttons -->
           <div class="hug-card" aria-live="polite">
-            <p class="metric-label">Total hugs sent</p>
+            <p class="metric-label">Total Hugs Sent</p>
             <strong class="hug-count" id="hugCount">0</strong>
             <p class="last-action" id="lastAction">Ready when you are.</p>
           </div>
 
           <button class="heart-button" id="hugButton" type="button" aria-label="Send a hug">
             <span class="heart-button__halo" aria-hidden="true"></span>
-            <span class="heart-button__icon" aria-hidden="true">&hearts;</span>
+            <svg class="heart-button__icon" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
             <span class="heart-button__text">Send Hug</span>
           </button>
         </article>
@@ -59,28 +169,28 @@
         <!-- Relationship Countdown & Celebration Widget -->
         <article class="panel countdown-panel">
           <p class="panel-kicker">Since May 17, 2026</p>
-          <h2>Our next little celebration</h2>
+          <h2>Celebration Milestones</h2>
           <div class="countdown-grid" aria-live="polite">
             <div class="countdown-card">
               <span class="countdown-value" id="monthsaryDays">--</span>
-              <span class="countdown-label">days to monthsary</span>
+              <span class="countdown-label">Days to Monthsary</span>
               <span class="countdown-date" id="monthsaryDate">Loading</span>
             </div>
             <div class="countdown-card">
               <span class="countdown-value" id="anniversaryDays">--</span>
-              <span class="countdown-label">days to anniversary</span>
+              <span class="countdown-label">Days to Anniversary</span>
               <span class="countdown-date" id="anniversaryDate">Loading</span>
             </div>
           </div>
-          <p class="panel-note" id="togetherSummary">Counting every cozy day.</p>
+          <p class="panel-note" id="togetherSummary">Tracking shared milestones.</p>
         </article>
 
         <!-- Memory Scrapbook Photo Slot -->
         <article class="panel photo-panel">
           <div class="panel-split-header">
             <div>
-              <p class="panel-kicker">Daily gift</p>
-              <h2>Photo slot</h2>
+              <p class="panel-kicker">Daily Archive</p>
+              <h2>Photo Slot</h2>
             </div>
             <div class="photo-actions">
               <button class="soft-button compact-button" id="photoChooseButton" type="button">Choose</button>
@@ -89,22 +199,22 @@
           </div>
           <label class="photo-dropzone" for="photoInput">
             <input id="photoInput" type="file" accept="image/*" hidden />
-            <span class="photo-empty" id="photoEmpty">Tap to add today's photo</span>
-            <img class="photo-preview" id="photoPreview" alt="Uploaded daily gift preview" hidden />
+            <span class="photo-empty" id="photoEmpty">Click to upload today's photo</span>
+            <img class="photo-preview" id="photoPreview" alt="Uploaded photo preview" hidden />
           </label>
-          <p class="panel-note" id="photoStatus">Saved and synced via Supabase cloud storage.</p>
+          <p class="panel-note" id="photoStatus">Synchronized securely via cloud storage.</p>
         </article>
 
         <!-- Love Notes Wall -->
         <article class="panel notes-compact-panel">
           <div class="panel-split-header">
             <div>
-              <p class="panel-kicker">Love notes</p>
+              <p class="panel-kicker">Messages</p>
               <h2>Notes</h2>
             </div>
-            <button class="soft-button compact-button" id="newNoteButton" type="button">New</button>
+            <button class="soft-button compact-button" id="newNoteButton" type="button">New Note</button>
           </div>
-          <ul class="notes-list" id="notesList" aria-label="Love note history"></ul>
+          <ul class="notes-list" id="notesList" aria-label="Note history"></ul>
         </article>
 
         <!-- Calendar Widget & Realtime Activity Feed -->
@@ -112,8 +222,8 @@
           <article class="panel calendar-panel">
             <div class="calendar-header">
               <div>
-                <p class="panel-kicker">Calendar</p>
-                <h2 id="calendarTitle">This month</h2>
+                <p class="panel-kicker">Schedule</p>
+                <h2 id="calendarTitle">This Month</h2>
               </div>
               <span class="calendar-badge">17</span>
             </div>
@@ -127,156 +237,32 @@
               <span>Sat</span>
             </div>
             <button class="calendar-open-button" id="calendarOpenButton" type="button" aria-label="Open calendar planner">
-              <span class="calendar-grid" id="calendarGrid" aria-label="Relationship calendar"></span>
+              <span class="calendar-grid" id="calendarGrid" aria-label="Calendar dates"></span>
             </button>
           </article>
 
           <article class="panel activity-panel">
             <div class="activity-header">
               <div>
-                <p class="panel-kicker">Realtime feed</p>
-                <h2>Latest moments</h2>
+                <p class="panel-kicker">Activity Log</p>
+                <h2>Recent Moments</h2>
               </div>
               <span class="live-dot" aria-hidden="true"></span>
             </div>
             <ul class="activity-list" id="activityList">
-              <li>Frontend preview loaded.</li>
+              <li>Workspace ready.</li>
             </ul>
           </article>
         </div>
       </section>
 
       <!-- ======================================================== -->
-      <!-- TAB 2: SIGN IN PAGE (CONNECTED TO FEMALE & MALE THEME)   -->
-      <!-- ======================================================== -->
-      <section class="view" id="signinView" data-view="signin" aria-labelledby="signinTitle">
-        <!-- Dual Aesthetic Header Card -->
-        <article class="hero-card visual-container auth-hero-card">
-          <div class="auth-theme-banner">
-            <!-- Female & Male Theme Preview Ribbon -->
-            <div class="dual-theme-preview" aria-hidden="true">
-              <span class="theme-half theme-half--female">
-                <span class="theme-glow-dot theme-glow-dot--pink"></span>
-                <span class="theme-half-label">Her Side ♀</span>
-              </span>
-              <span class="theme-center-heart">&hearts;</span>
-              <span class="theme-half theme-half--male">
-                <span class="theme-glow-dot theme-glow-dot--blue"></span>
-                <span class="theme-half-label">His Side ♂</span>
-              </span>
-            </div>
-
-            <div class="title-block">
-              <p class="eyebrow">Aesthetic & Account</p>
-              <h1 id="signinTitle">Sign In to Cozy Space</h1>
-              <p class="subtitle">Personalize your aesthetic side and sign in to sync with your partner in real time.</p>
-            </div>
-          </div>
-        </article>
-
-        <!-- Step 1: Choose Theme (Connected to Female & Male Theme) -->
-        <article class="panel theme-select-panel">
-          <div class="panel-kicker">Step 1 • Your Side of the Space</div>
-          <h2 class="panel-section-title">Choose Your Theme</h2>
-          <p class="panel-note" style="margin-bottom: 14px;">Select your side to instantly switch between the dark-pinkish female theme and the cool-blue male theme.</p>
-
-          <div class="gender-selection-grid auth-gender-grid">
-            <button class="gender-card gender-card--female is-selected" id="genderFemaleButton" type="button" aria-pressed="true">
-              <div class="gender-card-header">
-                <span class="gender-swatch gender-swatch--female" aria-hidden="true"></span>
-                <span class="gender-pill gender-pill--female">Female ♀</span>
-              </div>
-              <div class="gender-info">
-                <strong>Her Aesthetic</strong>
-                <span>Dark Wine & Soft Pink • Rose Glow</span>
-              </div>
-              <span class="gender-check" aria-hidden="true">✓ Active</span>
-            </button>
-
-            <button class="gender-card gender-card--male" id="genderMaleButton" type="button" aria-pressed="false">
-              <div class="gender-card-header">
-                <span class="gender-swatch gender-swatch--male" aria-hidden="true"></span>
-                <span class="gender-pill gender-pill--male">Male ♂</span>
-              </div>
-              <div class="gender-info">
-                <strong>His Aesthetic</strong>
-                <span>Charcoal Slate & Ice Blue • Serene Glow</span>
-              </div>
-              <span class="gender-check" aria-hidden="true">✓ Active</span>
-            </button>
-          </div>
-        </article>
-
-        <!-- Step 2: Authentication & Cloud Sync -->
-        <article class="panel auth-panel">
-          <div class="panel-kicker">Step 2 • Cloud Sync</div>
-
-          <!-- When Logged Out: Sign In Form -->
-          <div id="authLoggedOutSection">
-            <h2 class="panel-section-title">Sign In or Create Account</h2>
-            <p class="panel-note" style="margin-bottom: 16px;">Sign in to save your hugs, notes, and photos to Supabase so your partner sees them live.</p>
-
-            <div class="oauth-buttons-list">
-              <button class="oauth-button oauth-button--google" id="googleSignInButton" type="button">
-                <svg class="oauth-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                  <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
-                  <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/>
-                  <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3 0-.8.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15s.7 5.3 1.9 7.7l3.7-2.9z"/>
-                  <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 17C3.7 20.7 7.5 24 12 24z"/>
-                </svg>
-                <span>Continue with Google</span>
-              </button>
-
-              <button class="oauth-button oauth-button--github" id="githubSignInButton" type="button">
-                <svg class="oauth-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-                  <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-                </svg>
-                <span>Continue with GitHub</span>
-              </button>
-            </div>
-
-            <div class="auth-divider">
-              <span>or sign in with email</span>
-            </div>
-
-            <form class="auth-email-form" id="emailAuthForm">
-              <input class="auth-input" id="authEmailInput" type="email" placeholder="Email address" required autocomplete="email" />
-              <input class="auth-input" id="authPasswordInput" type="password" placeholder="Password (min 6 characters)" autocomplete="current-password" />
-              
-              <div class="auth-actions">
-                <button class="soft-button" id="emailSignInButton" type="submit">Sign In</button>
-                <button class="ghost-button" id="emailSignUpButton" type="button">Sign Up</button>
-              </div>
-            </form>
-          </div>
-
-          <!-- When Logged In: Profile Card -->
-          <div id="authLoggedInSection" hidden>
-            <div class="auth-profile-card">
-              <div class="auth-avatar" id="authProfileAvatar">♀</div>
-              <div class="auth-profile-details">
-                <strong id="authProfileEmail">you@example.com</strong>
-                <span class="auth-profile-status" id="authProfileThemeTag">Female ♀ Theme Active</span>
-                <span class="auth-profile-partner" id="authProfilePartnerTag">Partner: Waiting for invite</span>
-              </div>
-            </div>
-            <div class="auth-actions" style="margin-top: 14px;">
-              <button class="soft-button" id="authGoToMainButton" type="button">Go to Main Space 🏠</button>
-              <button class="ghost-button" id="authSignOutButton" type="button">Sign Out</button>
-            </div>
-          </div>
-
-          <p class="auth-status-hint" id="authStatusHint">Select female or male to set your theme, then sign in to sync with your partner.</p>
-        </article>
-      </section>
-
-      <!-- ======================================================== -->
-      <!-- TAB 3: SETTINGS PAGE (INVITE, PAIRING & PREFERENCES)     -->
+      <!-- VIEW 3: SETTINGS PAGE (AVAILABLE UPON SIGNING IN)        -->
       <!-- ======================================================== -->
       <section class="view" id="settingsView" data-view="settings" aria-labelledby="settingsTitle">
         <!-- Partner & Space Management Section -->
         <article class="panel">
-          <div class="panel-kicker">Strictly 2 People</div>
+          <div class="panel-kicker">Access Management</div>
           <h2 id="settingsTitle">Partner & Shared Space</h2>
           
           <div class="space-status-card" id="spaceStatusCard">
@@ -284,30 +270,30 @@
               <span class="space-badge" id="spaceBadge">1 / 2 Partners</span>
               <span class="space-name-tag" id="spaceNameTag">Our Cozy Space</span>
             </div>
-            <p class="space-status-desc" id="spaceStatusDesc">Only 1 partner can be invited to share this space. Once connected, your hugs, notes, photos, and calendar are completely private to the two of you.</p>
+            <p class="space-status-desc" id="spaceStatusDesc">Each space is strictly reserved for two partners. All data, hugs, notes, photos, and calendar plans are restricted to verified members.</p>
             <div class="space-members-list" id="spaceMembersList"></div>
           </div>
 
           <!-- Share Invite Link Section -->
           <div class="invite-section" id="inviteLinkSection" style="margin-top: 16px;">
-            <label class="auth-section-title" for="inviteLinkInput">Share this invite link with your partner:</label>
+            <label class="auth-section-title" for="inviteLinkInput">Partner Invitation Link:</label>
             <div class="copy-input-row">
               <input class="auth-input copy-input" id="inviteLinkInput" type="text" readonly value="Loading invite link..." />
               <button class="soft-button copy-button" id="copyInviteLinkButton" type="button">Copy Link</button>
             </div>
             <div class="invite-quick-actions" style="margin-top: 8px;">
-              <button class="ghost-button compact-button" id="shareInviteButton" type="button">📱 Share via Apps</button>
+              <button class="ghost-button compact-button" id="shareInviteButton" type="button">Share via Device</button>
               <button class="ghost-button compact-button" id="copyInviteCodeOnlyButton" type="button">Copy Code Only</button>
             </div>
-            <p class="invite-locked-notice" id="inviteLockedNotice" hidden>🔒 This space is already full (2/2 members). No more partners can join.</p>
+            <p class="invite-locked-notice" id="inviteLockedNotice" hidden>Notice: This space has reached the 2-member capacity.</p>
           </div>
 
           <!-- Join with Partner Code Section -->
           <div class="invite-section invite-section--join" style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px;">
-            <p class="auth-section-title">Have an invite code from your partner?</p>
+            <p class="auth-section-title">Join an Existing Space</p>
             <form class="code-join-form" id="codeJoinForm">
               <div class="copy-input-row">
-                <input class="auth-input" id="manualInviteCodeInput" type="text" placeholder="e.g. A1B2C3D4" maxlength="12" uppercase required />
+                <input class="auth-input" id="manualInviteCodeInput" type="text" placeholder="Invite Code (e.g. A1B2C3D4)" maxlength="12" uppercase required />
                 <button class="soft-button" type="submit" id="submitJoinCodeButton">Join Space</button>
               </div>
             </form>
@@ -315,36 +301,36 @@
           </div>
         </article>
 
-        <!-- Quick Aesthetic Switcher in Settings -->
+        <!-- Aesthetic Theme Switcher -->
         <article class="panel">
-          <div class="panel-kicker">Aesthetic</div>
-          <h2>Switch Theme</h2>
-          <p class="panel-note" style="margin-bottom: 10px;">Switch between your female and male themes anytime.</p>
+          <div class="panel-kicker">Workspace</div>
+          <h2>Theme Palette</h2>
+          <p class="panel-note" style="margin-bottom: 10px;">Switch between female and male color themes.</p>
           <div class="gender-selection-grid">
             <button class="gender-card is-selected" id="settingsThemeFemaleButton" type="button">
               <span class="gender-swatch gender-swatch--female" aria-hidden="true"></span>
               <div class="gender-info">
-                <strong>Female ♀</strong>
-                <span>Dark & Pinkish</span>
+                <strong>Female</strong>
+                <span>Dark Wine & Soft Rose</span>
               </div>
             </button>
             <button class="gender-card" id="settingsThemeMaleButton" type="button">
               <span class="gender-swatch gender-swatch--male" aria-hidden="true"></span>
               <div class="gender-info">
-                <strong>Male ♂</strong>
-                <span>Bluish Theme</span>
+                <strong>Male</strong>
+                <span>Charcoal & Ice Blue</span>
               </div>
             </button>
           </div>
         </article>
 
-        <!-- Haptics & Vibration Setting -->
+        <!-- Haptics Setting -->
         <article class="panel">
-          <div class="panel-kicker">Touch & Feel</div>
+          <div class="panel-kicker">Accessibility & Feedback</div>
           <div class="setting-row">
             <div class="setting-info">
-              <h2 style="margin: 0; font-size: 1.15rem;">Haptic Vibrations</h2>
-              <p style="margin: 4px 0 0; color: var(--color-muted); font-size: 0.88rem;">Gentle vibration pulses on hugs, notes, and buttons.</p>
+              <h2 style="margin: 0; font-size: 1.15rem;">Haptic Feedback</h2>
+              <p style="margin: 4px 0 0; color: var(--color-muted); font-size: 0.88rem;">Physical vibration pulses for interactions on supported mobile hardware.</p>
             </div>
             <label class="switch-toggle" for="hapticsToggle">
               <input id="hapticsToggle" type="checkbox" checked />
@@ -352,30 +338,30 @@
             </label>
           </div>
           <button class="ghost-button compact-button" id="testHapticsButton" type="button" style="margin-top: 10px;">
-            <span>Test Vibration 📳</span>
+            <span>Test Vibration</span>
           </button>
         </article>
 
-        <!-- Account Info & Sign Out -->
+        <!-- Account & Cloud Info -->
         <article class="panel">
-          <div class="panel-kicker">Account</div>
-          <h2>Account & Connection</h2>
-          <p class="panel-note" id="settingsAccountSummary" style="margin-bottom: 12px;">Not signed in (Local preview mode)</p>
+          <div class="panel-kicker">Session</div>
+          <h2>Account Status</h2>
+          <p class="panel-note" id="settingsAccountSummary" style="margin-bottom: 12px;">Active Session</p>
           <div class="settings-actions">
-            <button class="ghost-button compact-button" id="settingsSignOutButton" type="button" hidden>Sign Out</button>
+            <button class="ghost-button compact-button" id="settingsSignOutButton" type="button">Sign Out</button>
           </div>
         </article>
       </section>
     </main>
 
-    <!-- Calendar Planner Modal Sheet (for scheduling dates) -->
+    <!-- Calendar Planner Modal Sheet -->
     <section class="note-modal" id="calendarModal" aria-hidden="true" aria-labelledby="calendarModalTitle" role="dialog">
       <div class="note-modal__backdrop" data-close-calendar-modal></div>
       <div class="note-modal__sheet scheduler-sheet">
         <div class="note-modal__header">
           <div>
-            <p class="panel-kicker">Calendar planner</p>
-            <h2 id="calendarModalTitle">Plan a day</h2>
+            <p class="panel-kicker">Calendar Planner</p>
+            <h2 id="calendarModalTitle">Plan Date</h2>
           </div>
           <button class="icon-button" type="button" data-close-calendar-modal aria-label="Close calendar planner">&times;</button>
         </div>
@@ -415,13 +401,13 @@
       </div>
     </section>
 
-    <!-- Love Note Editor Modal Sheet -->
+    <!-- Note Editor Modal Sheet -->
     <section class="note-modal" id="noteModal" aria-hidden="true" aria-labelledby="noteModalTitle" role="dialog">
       <div class="note-modal__backdrop" data-close-modal></div>
       <div class="note-modal__sheet">
         <div class="note-modal__header">
           <div>
-            <p class="panel-kicker">Love notes</p>
+            <p class="panel-kicker">Message Editor</p>
             <h2 id="noteModalTitle">New Note</h2>
           </div>
           <button class="icon-button" type="button" data-close-modal aria-label="Close note editor">&times;</button>
@@ -429,8 +415,8 @@
 
         <form class="note-editor" id="noteForm">
           <input class="note-title-input" id="noteTitleInput" type="text" placeholder="Title" autocomplete="off" />
-          <textarea class="note-body-input" id="noteBodyInput" placeholder="Write something soft..."></textarea>
-          <p class="note-save-hint" id="noteSaveHint">Saving adds the exact date and time.</p>
+          <textarea class="note-body-input" id="noteBodyInput" placeholder="Write your note..."></textarea>
+          <p class="note-save-hint" id="noteSaveHint">Saving records the exact date and timestamp.</p>
           <div class="note-actions">
             <button class="ghost-button" id="deleteNoteButton" type="button" disabled>Delete</button>
             <button class="soft-button" type="submit">Save</button>
@@ -440,21 +426,29 @@
     </section>
 
     <!-- ======================================================== -->
-    <!-- PRIMARY NAVIGATION: 3 CLEAN TABS                         -->
-    <!-- 1. Main Page | 2. Sign In Page | 3. Settings Page        -->
+    <!-- AUTH-GATED NAVIGATION: ONLY VISIBLE AFTER SIGNING IN     -->
     <!-- ======================================================== -->
-    <nav class="bottom-tabs" aria-label="Primary navigation">
+    <nav class="bottom-tabs" id="bottomTabs" aria-label="Primary navigation" hidden>
       <button class="tab-button is-active" type="button" data-target-view="dashboard" aria-controls="dashboardView">
-        <span class="tab-icon" aria-hidden="true">&#8962;</span>
+        <svg class="tab-icon-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
         <span>Main</span>
       </button>
-      <button class="tab-button" type="button" data-target-view="signin" aria-controls="signinView">
-        <span class="tab-icon" aria-hidden="true">&hearts;</span>
-        <span>Sign In</span>
-      </button>
       <button class="tab-button" type="button" data-target-view="settings" aria-controls="settingsView">
-        <span class="tab-icon" aria-hidden="true">&#9881;</span>
+        <svg class="tab-icon-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
         <span>Settings</span>
+      </button>
+      <button class="tab-button" type="button" data-target-view="signin" aria-controls="signinView" id="signinTabButton">
+        <svg class="tab-icon-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span id="signinTabButtonText">Sign In</span>
       </button>
     </nav>
 

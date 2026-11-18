@@ -875,48 +875,55 @@ h2 {
   z-index: 6;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  max-width: 410px;
+  gap: 8px;
+  max-width: 440px;
   margin: 0 auto;
-  padding: 6px;
-  border: 1px solid rgba(0,0,0,0.35);
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 28px;
   background: var(--bottom-bar-bg);
   box-shadow: 0 18px 42px var(--interactive-glow);
   backdrop-filter: blur(20px);
 }
 
+.bottom-tabs[hidden] {
+  display: none !important;
+}
+
 .tab-button {
   display: flex;
-  min-height: 52px;
-  flex-direction: column;
+  min-height: 48px;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 6px 4px;
+  gap: 8px;
+  padding: 8px 14px;
   border-radius: 20px;
   color: var(--color-muted);
   background: transparent;
-  font-size: 0.78rem;
-  font-weight: 800;
+  font-size: 0.84rem;
+  font-weight: 700;
   letter-spacing: 0.02em;
   transition: transform 160ms ease, background 160ms ease, color 160ms ease;
 }
 
 .tab-button.is-active {
-  background: rgba(0,0,0,0.18);
+  background: rgba(0, 0, 0, 0.22);
   color: var(--color-primary);
-  transform: translateY(-1px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.tab-button.is-active .tab-icon {
-  color: currentColor;
-  text-shadow: 0 0 10px var(--color-primary-soft);
+.tab-icon-svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  stroke: currentColor;
+  transition: stroke 160ms ease;
 }
 
-.tab-icon {
-  font-size: 1.15rem;
-  line-height: 1;
+.tab-button.is-active .tab-icon-svg {
+  stroke: var(--color-primary);
+  filter: drop-shadow(0 0 6px var(--interactive-glow));
 }
 
 .particle-layer {
@@ -926,8 +933,16 @@ h2 {
   overflow: hidden;
 }
 
-.heart-particle {
+.hug-particle-dot {
   position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 12px var(--color-primary);
+  pointer-events: none;
+  animation: particleFloat 1200ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
   color: var(--color-primary);
   font-size: 1.4rem;
   opacity: 0;
@@ -1570,10 +1585,10 @@ h2 {
   color: #c7e7ff;
 }
 
-.theme-center-heart {
-  font-size: 1.25rem;
-  color: #ffb3c6;
-  animation: heartPulse 1.8s ease-in-out infinite;
+.theme-divider-line {
+  width: 1px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .auth-gender-grid {
