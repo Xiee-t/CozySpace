@@ -21,12 +21,14 @@ Whether navigating long-distance relationships or cherishing everyday closeness,
 
 | Feature | Description | Real-Time Mechanism |
 | :--- | :--- | :--- |
-| **Virtual Hugs** | Interactive heart button with pulse animation, cumulative hug counter, and streak counter. | Supabase Realtime Broadcast / Postgres Changes |
-| **Love Notes Wall** | Sticky notes and micro-letters with color pins, timestamps, and emoji reactions. | Realtime Database sync (Instant insert/delete) |
+| **Strict 1-to-1 Shared Space** | Private invite link for User 1 to invite exactly 1 partner (max 2 members). No third party can ever see or join. | Cryptographic invite code & Postgres 2-member constraint |
+| **Haptic Feedback & Vibrations** | Configurable toggle in Settings to turn physical vibration haptics on or off when sending hugs or receiving notes. | Web Vibration API + Capacitor Haptics fallback |
+| **Virtual Hugs** | Interactive heart button with pulse animation, cumulative hug counter, and streak counter. Strictly visible only to the two partners. | Supabase Realtime WebSocket filtered by `space_id` |
+| **Love Notes Wall** | Sticky notes and micro-letters with color pins, timestamps, and emoji reactions. | Realtime Database sync scoped to private space |
 | **Couples Calendar** | Shared event planner with countdown timers (Anniversaries, date nights, upcoming visits). | Supabase Database with date indexing |
-| **Memory Scrapbook** | Private photo gallery with Polaroid aesthetic, captions, and date tags. | Supabase Storage Bucket + signed secure URLs |
-| **Live Presence & Feed** | Activity ticker ("Alex sent a hug 2m ago", "Taylor posted a note") and mood indicators. | Supabase Realtime Presence |
-| **Dual Theme System** | Personalized color schemes ("Mine" vs "Partner's" mood aesthetic). | Local state & synchronized profile preference |
+| **Memory Scrapbook** | Private photo gallery with Polaroid aesthetic, captions, and date tags. | Supabase Storage Bucket scoped to `space_id` |
+| **Live Presence & Feed** | Activity ticker ("Alex sent a hug", "Taylor posted a note") and mood indicators. | Supabase Realtime Presence scoped to space |
+| **Gender Aesthetic Themes** | Female ♀ (Dark & Pinkish: `#2e1e1f` + `#e30b5c`) vs Male ♂ (Bluish: `#35393C` + `#A4D8FF`). | Local state & synchronized profile preference in Supabase |
 
 ---
 

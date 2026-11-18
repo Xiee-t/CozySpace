@@ -12,9 +12,13 @@ const STORAGE_KEYS = {
   plans: "cozy-space-plans",
   theme: "cozy-space-active-theme",
   gender: "cozy-space-gender",
+  haptics: "cozy-space-haptics",
+  spaceId: "cozy-space-space-id",
 };
 
 const savedGender = localStorage.getItem(STORAGE_KEYS.gender) || "female";
+const savedHaptics = localStorage.getItem(STORAGE_KEYS.haptics) !== "false";
+const savedSpaceId = localStorage.getItem(STORAGE_KEYS.spaceId) || DEFAULT_SPACE_ID;
 
 const state = {
   activeView: "dashboard",
@@ -23,6 +27,7 @@ const state = {
   dailyGiftUnlockedAt: null,
   partnerName: "Partner",
   gender: savedGender,
+  hapticsEnabled: savedHaptics,
   activeTheme: savedGender === "male" ? "male" : "female",
   relationshipStart: new Date(2026, 4, 17, 12),
   notes: [],
@@ -35,6 +40,9 @@ const state = {
   isLive: false,
   user: null,
   profile: null,
+  spaceId: savedSpaceId,
+  space: null,
+  realtimeChannel: null,
 };
 
 const els = {
@@ -76,11 +84,18 @@ const els = {
   photoPreview: document.querySelector("#photoPreview"),
   photoEmpty: document.querySelector("#photoEmpty"),
   photoStatus: document.querySelector("#photoStatus"),
+
+  // Profile Strip
   authProfileStrip: document.querySelector("#authProfileStrip"),
   openAuthModalButton: document.querySelector("#openAuthModalButton"),
   userThemeSwatch: document.querySelector("#userThemeSwatch"),
   authButtonLabel: document.querySelector("#authButtonLabel"),
-  signOutButton: document.querySelector("#signOutButton"),
+  openInviteModalButton: document.querySelector("#openInviteModalButton"),
+  partnerChipIcon: document.querySelector("#partnerChipIcon"),
+  partnerStatusLabel: document.querySelector("#partnerStatusLabel"),
+  openSettingsModalButton: document.querySelector("#openSettingsModalButton"),
+
+  // Auth Modal
   authModal: document.querySelector("#authModal"),
   authModalCloseButtons: document.querySelectorAll("[data-close-auth-modal]"),
   genderFemaleButton: document.querySelector("#genderFemaleButton"),
@@ -93,6 +108,58 @@ const els = {
   emailSignInButton: document.querySelector("#emailSignInButton"),
   emailSignUpButton: document.querySelector("#emailSignUpButton"),
   authStatusHint: document.querySelector("#authStatusHint"),
+
+  // Invite Modal
+  inviteModal: document.querySelector("#inviteModal"),
+  inviteModalCloseButtons: document.querySelectorAll("[data-close-invite-modal]"),
+  spaceBadge: document.querySelector("#spaceBadge"),
+  spaceNameTag: document.querySelector("#spaceNameTag"),
+  spaceStatusDesc: document.querySelector("#spaceStatusDesc"),
+  spaceMembersList: document.querySelector("#spaceMembersList"),
+  inviteLinkInput: document.querySelector("#inviteLinkInput"),
+  copyInviteLinkButton: document.querySelector("#copyInviteLinkButton"),
+  shareInviteButton: document.querySelector("#shareInviteButton"),
+  copyInviteCodeOnlyButton: document.querySelector("#copyInviteCodeOnlyButton"),
+  inviteLockedNotice: document.querySelector("#inviteLockedNotice"),
+  codeJoinForm: document.querySelector("#codeJoinForm"),
+  manualInviteCodeInput: document.querySelector("#manualInviteCodeInput"),
+  submitJoinCodeButton: document.querySelector("#submitJoinCodeButton"),
+  inviteModalHint: document.querySelector("#inviteModalHint"),
+
+  // Settings Modal
+  settingsModal: document.querySelector("#settingsModal"),
+  settingsModalCloseButtons: document.querySelectorAll("[data-close-settings-modal]"),
+  hapticsToggle: document.querySelector("#hapticsToggle"),
+  testHapticsButton: document.querySelector("#testHapticsButton"),
+  settingsThemeFemaleButton: document.querySelector("#settingsThemeFemaleButton"),
+  settingsThemeMaleButton: document.querySelector("#settingsThemeMaleButton"),
+  settingsAccountSummary: document.querySelector("#settingsAccountSummary"),
+  settingsManageInviteButton: document.querySelector("#settingsManageInviteButton"),
+  settingsSignOutButton: document.querySelector("#settingsSignOutButton"),
+
+  // Join Modal
+  joinModal: document.querySelector("#joinModal"),
+  joinModalCloseButtons: document.querySelectorAll("[data-close-join-modal]"),
+  joinHostHeading: document.querySelector("#joinHostHeading"),
+  joinHostMessage: document.querySelector("#joinHostMessage"),
+  joinSpaceBadge: document.querySelector("#joinSpaceBadge"),
+  joinActionSection: document.querySelector("#joinActionSection"),
+  joinGenderFemaleButton: document.querySelector("#joinGenderFemaleButton"),
+  joinGenderMaleButton: document.querySelector("#joinGenderMaleButton"),
+  joinLoggedOutView: document.querySelector("#joinLoggedOutView"),
+  joinLoggedInView: document.querySelector("#joinLoggedInView"),
+  joinGoogleButton: document.querySelector("#joinGoogleButton"),
+  joinGithubButton: document.querySelector("#joinGithubButton"),
+  joinEmailForm: document.querySelector("#joinEmailForm"),
+  joinEmailInput: document.querySelector("#joinEmailInput"),
+  joinPasswordInput: document.querySelector("#joinPasswordInput"),
+  joinSignUpButton: document.querySelector("#joinSignUpButton"),
+  acceptJoinButton: document.querySelector("#acceptJoinButton"),
+  joinFullNotice: document.querySelector("#joinFullNotice"),
+  joinDeclineButton: document.querySelector("#joinDeclineButton"),
+  joinModalHint: document.querySelector("#joinModalHint"),
+
+  // Notes & Particles
   newNoteButton: document.querySelector("#newNoteButton"),
   noteModal: document.querySelector("#noteModal"),
   noteModalTitle: document.querySelector("#noteModalTitle"),
@@ -116,9 +183,12 @@ async function init() {
   renderNotes();
   wireUiEvents();
   setGender(state.gender);
+  updateHapticsUi();
+  updatePartnerBadge();
   window.setInterval(renderRelationshipDates, 60 * 1000);
 
   await initSupabase();
+  await checkUrlForInvite();
 }
 
 function loadLocalState() {
@@ -139,26 +209,59 @@ function wireUiEvents() {
     button.addEventListener("click", () => setActiveView(button.dataset.targetView));
   });
 
+  // Auth Modal
   els.openAuthModalButton?.addEventListener("click", openAuthModal);
-  els.signOutButton?.addEventListener("click", handleSignOut);
   els.authModalCloseButtons.forEach((btn) => btn.addEventListener("click", closeAuthModal));
-
   els.genderFemaleButton?.addEventListener("click", () => setGender("female"));
   els.genderMaleButton?.addEventListener("click", () => setGender("male"));
-
   els.googleSignInButton?.addEventListener("click", handleGoogleSignIn);
   els.githubSignInButton?.addEventListener("click", handleGithubSignIn);
   els.emailAuthForm?.addEventListener("submit", handleEmailSignIn);
   els.emailSignUpButton?.addEventListener("click", handleEmailSignUp);
 
+  // Invite Modal
+  els.openInviteModalButton?.addEventListener("click", openInviteModal);
+  els.inviteModalCloseButtons.forEach((btn) => btn.addEventListener("click", closeInviteModal));
+  els.copyInviteLinkButton?.addEventListener("click", copyInviteLink);
+  els.shareInviteButton?.addEventListener("click", shareInvite);
+  els.copyInviteCodeOnlyButton?.addEventListener("click", copyInviteCodeOnly);
+  els.codeJoinForm?.addEventListener("submit", handleManualCodeJoin);
+
+  // Settings Modal
+  els.openSettingsModalButton?.addEventListener("click", openSettingsModal);
+  els.settingsModalCloseButtons.forEach((btn) => btn.addEventListener("click", closeSettingsModal));
+  els.hapticsToggle?.addEventListener("change", (e) => setHaptics(e.target.checked));
+  els.testHapticsButton?.addEventListener("click", testHapticVibration);
+  els.settingsThemeFemaleButton?.addEventListener("click", () => setGender("female"));
+  els.settingsThemeMaleButton?.addEventListener("click", () => setGender("male"));
+  els.settingsManageInviteButton?.addEventListener("click", () => {
+    closeSettingsModal();
+    openInviteModal();
+  });
+  els.settingsSignOutButton?.addEventListener("click", handleSignOut);
+
+  // Join Modal
+  els.joinModalCloseButtons.forEach((btn) => btn.addEventListener("click", closeJoinModal));
+  els.joinGenderFemaleButton?.addEventListener("click", () => setJoinGender("female"));
+  els.joinGenderMaleButton?.addEventListener("click", () => setJoinGender("male"));
+  els.joinGoogleButton?.addEventListener("click", handleGoogleSignIn);
+  els.joinGithubButton?.addEventListener("click", handleGithubSignIn);
+  els.joinEmailForm?.addEventListener("submit", handleJoinEmailSignIn);
+  els.joinSignUpButton?.addEventListener("click", handleJoinEmailSignUp);
+  els.acceptJoinButton?.addEventListener("click", handleAcceptJoinCurrentSpace);
+  els.joinDeclineButton?.addEventListener("click", closeJoinModal);
+
+  // Hug button
   els.hugButton.addEventListener("click", async (event) => {
     await handleHugInteraction(event.currentTarget);
   });
 
+  // Photos
   els.photoChooseButton.addEventListener("click", () => els.photoInput.click());
   els.photoDeleteButton.addEventListener("click", deleteDailyPhoto);
   els.photoInput.addEventListener("change", handlePhotoSelected);
 
+  // Calendar
   els.calendarOpenButton.addEventListener("click", () => openCalendarModal(new Date()));
   els.calendarModalCloseButtons.forEach((button) => {
     button.addEventListener("click", closeCalendarModal);
@@ -168,6 +271,7 @@ function wireUiEvents() {
   els.planForm.addEventListener("submit", saveCurrentPlan);
   els.deletePlanButton.addEventListener("click", deleteCurrentPlan);
 
+  // Notes
   els.newNoteButton.addEventListener("click", () => startNewNote());
   els.noteModalCloseButtons.forEach((button) => {
     button.addEventListener("click", closeNoteModal);
@@ -175,9 +279,13 @@ function wireUiEvents() {
   els.noteForm.addEventListener("submit", saveCurrentNote);
   els.deleteNoteButton.addEventListener("click", deleteCurrentNote);
 
+  // Escape key for all modals
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       if (els.authModal?.classList.contains("is-open")) closeAuthModal();
+      if (els.inviteModal?.classList.contains("is-open")) closeInviteModal();
+      if (els.settingsModal?.classList.contains("is-open")) closeSettingsModal();
+      if (els.joinModal?.classList.contains("is-open")) closeJoinModal();
       if (els.noteModal?.classList.contains("is-open")) closeNoteModal();
       if (els.calendarModal?.classList.contains("is-open")) closeCalendarModal();
     }
@@ -198,6 +306,9 @@ function setGender(gender) {
   els.genderMaleButton?.classList.toggle("is-selected", !isFemale);
   els.genderMaleButton?.setAttribute("aria-pressed", String(!isFemale));
 
+  els.settingsThemeFemaleButton?.classList.toggle("is-selected", isFemale);
+  els.settingsThemeMaleButton?.classList.toggle("is-selected", !isFemale);
+
   setTheme(isFemale ? "female" : "male");
   updateUserBadge();
 
@@ -214,6 +325,13 @@ function setGender(gender) {
         if (error) console.error("Error saving gender to backend:", error);
       });
   }
+}
+
+function setJoinGender(gender) {
+  setGender(gender);
+  const isFemale = gender === "female";
+  els.joinGenderFemaleButton?.classList.toggle("is-selected", isFemale);
+  els.joinGenderMaleButton?.classList.toggle("is-selected", !isFemale);
 }
 
 function setTheme(theme) {
@@ -246,10 +364,28 @@ function updateUserBadge() {
   if (state.user) {
     const name = state.profile?.display_name || state.user.email?.split("@")[0] || "Partner";
     els.authButtonLabel.textContent = `${name} (${genderIcon})`;
-    if (els.signOutButton) els.signOutButton.hidden = false;
+    if (els.settingsSignOutButton) els.settingsSignOutButton.hidden = false;
   } else {
     els.authButtonLabel.textContent = `${isFemale ? "Female ♀" : "Male ♂"} • Sign In`;
-    if (els.signOutButton) els.signOutButton.hidden = true;
+    if (els.settingsSignOutButton) els.settingsSignOutButton.hidden = true;
+  }
+}
+
+function updatePartnerBadge() {
+  if (!els.partnerStatusLabel) return;
+
+  if (state.space && state.space.member_count >= 2) {
+    const partner = state.space.members?.find((m) => !m.is_me);
+    const partnerName = partner?.display_name || (partner?.gender === "male" ? "Him ♂" : "Her ♀");
+    state.partnerName = partnerName;
+    els.partnerStatusLabel.textContent = `💑 ${partnerName}`;
+    if (els.partnerChipIcon) els.partnerChipIcon.textContent = "💑";
+  } else if (state.user) {
+    els.partnerStatusLabel.textContent = "Invite Partner (1/2)";
+    if (els.partnerChipIcon) els.partnerChipIcon.textContent = "💌";
+  } else {
+    els.partnerStatusLabel.textContent = "Invite Partner (1/2)";
+    if (els.partnerChipIcon) els.partnerChipIcon.textContent = "💌";
   }
 }
 
@@ -260,11 +396,79 @@ function getActorName() {
   if (state.user?.email) {
     return state.user.email.split("@")[0];
   }
-  return state.gender === "female" ? "Her" : "Him";
+  return state.gender === "male" ? "Him" : "Her";
 }
 
 // -------------------------------------------------------------
-// Auth Modal & Supabase Auth
+// Haptics & Vibration Management
+// -------------------------------------------------------------
+
+function setHaptics(enabled) {
+  state.hapticsEnabled = Boolean(enabled);
+  localStorage.setItem(STORAGE_KEYS.haptics, String(state.hapticsEnabled));
+  updateHapticsUi();
+
+  if (state.hapticsEnabled) {
+    triggerHapticFeedback(els.heroCard, 40);
+  }
+
+  if (supabaseClient && state.user) {
+    supabaseClient
+      .from("profiles")
+      .update({ haptics_enabled: state.hapticsEnabled, updated_at: new Date().toISOString() })
+      .eq("id", state.user.id)
+      .then(() => {});
+  }
+}
+
+function updateHapticsUi() {
+  if (els.hapticsToggle) {
+    els.hapticsToggle.checked = Boolean(state.hapticsEnabled);
+  }
+}
+
+function testHapticVibration() {
+  if (!state.hapticsEnabled) {
+    setHaptics(true);
+  }
+  triggerHapticFeedback(els.heroCard, [60, 50, 80]);
+  addActivity("Haptic vibration tested 📳");
+}
+
+function triggerHapticFeedback(fallbackTarget, pattern = [40, 50, 80]) {
+  if (!state.hapticsEnabled) return;
+
+  // 1. Web standard Vibration API for mobile devices
+  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+    try {
+      navigator.vibrate(pattern);
+    } catch (e) {
+      // Ignored
+    }
+  }
+
+  // 2. Capacitor native runtime
+  if (isNativeCapacitorRuntime()) {
+    getCapacitorHaptics().then((haptics) => {
+      haptics?.Haptics?.impact?.({ style: haptics.ImpactStyle.Medium });
+    }).catch(() => {});
+  }
+
+  // 3. Subtle visual feedback
+  if (fallbackTarget) {
+    emulateHapticFeedback(fallbackTarget);
+  }
+}
+
+function emulateHapticFeedback(target) {
+  if (!target) return;
+  target.classList.remove("haptic-pulse");
+  void target.offsetWidth;
+  target.classList.add("haptic-pulse");
+}
+
+// -------------------------------------------------------------
+// Modals & Navigation
 // -------------------------------------------------------------
 
 function openAuthModal() {
@@ -278,6 +482,38 @@ function closeAuthModal() {
   els.authModal?.setAttribute("aria-hidden", "true");
 }
 
+function openInviteModal() {
+  els.inviteModal?.classList.add("is-open");
+  els.inviteModal?.setAttribute("aria-hidden", "false");
+  updateInviteModalUi();
+}
+
+function closeInviteModal() {
+  els.inviteModal?.classList.remove("is-open");
+  els.inviteModal?.setAttribute("aria-hidden", "true");
+}
+
+function openSettingsModal() {
+  els.settingsModal?.classList.add("is-open");
+  els.settingsModal?.setAttribute("aria-hidden", "false");
+  updateSettingsModalUi();
+}
+
+function closeSettingsModal() {
+  els.settingsModal?.classList.remove("is-open");
+  els.settingsModal?.setAttribute("aria-hidden", "true");
+}
+
+function openJoinModal() {
+  els.joinModal?.classList.add("is-open");
+  els.joinModal?.setAttribute("aria-hidden", "false");
+}
+
+function closeJoinModal() {
+  els.joinModal?.classList.remove("is-open");
+  els.joinModal?.setAttribute("aria-hidden", "true");
+}
+
 function showAuthStatus(message, statusClass) {
   if (!els.authStatusHint) return;
   els.authStatusHint.textContent = message;
@@ -288,19 +524,32 @@ function showAuthError(message) {
   showAuthStatus(message, "is-error");
 }
 
+function showJoinStatus(message, statusClass) {
+  if (!els.joinModalHint) return;
+  els.joinModalHint.textContent = message;
+  els.joinModalHint.className = `auth-status-hint ${statusClass || ""}`;
+}
+
+// -------------------------------------------------------------
+// Auth Logic (Google, GitHub, Email)
+// -------------------------------------------------------------
+
 async function handleGoogleSignIn() {
   if (!supabaseClient) {
     showAuthError("Database connecting, please retry in a moment.");
     return;
   }
 
+  const pendingInvite = sessionStorage.getItem("cozy-space-pending-join") || undefined;
   showAuthStatus("Redirecting to Google sign in...", "is-info");
+
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: "google",
     options: {
       redirectTo: window.location.origin,
       data: {
         gender: state.gender,
+        invite_code: pendingInvite,
       },
     },
   });
@@ -316,13 +565,16 @@ async function handleGithubSignIn() {
     return;
   }
 
+  const pendingInvite = sessionStorage.getItem("cozy-space-pending-join") || undefined;
   showAuthStatus("Redirecting to GitHub sign in...", "is-info");
+
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: "github",
     options: {
       redirectTo: window.location.origin,
       data: {
         gender: state.gender,
+        invite_code: pendingInvite,
       },
     },
   });
@@ -333,7 +585,7 @@ async function handleGithubSignIn() {
 }
 
 async function handleEmailSignIn(event) {
-  event.preventDefault();
+  event?.preventDefault();
   if (!supabaseClient) {
     showAuthError("Database connecting, please retry in a moment.");
     return;
@@ -384,6 +636,7 @@ async function handleEmailSignUp() {
   }
 
   showAuthStatus("Creating your account...", "is-info");
+  const pendingInvite = sessionStorage.getItem("cozy-space-pending-join") || undefined;
 
   const { data, error } = await supabaseClient.auth.signUp({
     email,
@@ -392,6 +645,7 @@ async function handleEmailSignUp() {
       data: {
         gender: state.gender,
         display_name: email.split("@")[0],
+        invite_code: pendingInvite,
       },
     },
   });
@@ -410,14 +664,98 @@ async function handleEmailSignUp() {
   }
 }
 
+async function handleJoinEmailSignIn(event) {
+  event?.preventDefault();
+  const email = els.joinEmailInput?.value.trim();
+  const password = els.joinPasswordInput?.value;
+
+  if (!email || !password) {
+    showJoinStatus("Please enter your email and password.", "is-error");
+    return;
+  }
+
+  showJoinStatus("Signing in & connecting...", "is-info");
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    showJoinStatus(error.message, "is-error");
+    return;
+  }
+
+  await syncAuthUser(data.user);
+  const pendingCode = sessionStorage.getItem("cozy-space-pending-join");
+  if (pendingCode) {
+    await handleJoinSpace(pendingCode);
+  } else {
+    closeJoinModal();
+  }
+}
+
+async function handleJoinEmailSignUp() {
+  const email = els.joinEmailInput?.value.trim();
+  const password = els.joinPasswordInput?.value;
+
+  if (!email || !password || password.length < 6) {
+    showJoinStatus("Enter email and a password of at least 6 characters.", "is-error");
+    return;
+  }
+
+  showJoinStatus("Creating account & connecting...", "is-info");
+  const pendingInvite = sessionStorage.getItem("cozy-space-pending-join") || undefined;
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        gender: state.gender,
+        display_name: email.split("@")[0],
+        invite_code: pendingInvite,
+      },
+    },
+  });
+
+  if (error) {
+    showJoinStatus(error.message, "is-error");
+    return;
+  }
+
+  if (data?.session) {
+    await syncAuthUser(data.user);
+    if (pendingInvite) {
+      await handleJoinSpace(pendingInvite);
+    } else {
+      closeJoinModal();
+    }
+  } else {
+    showJoinStatus("Account created! Check your email to confirm.", "is-success");
+  }
+}
+
+async function handleAcceptJoinCurrentSpace() {
+  const pendingCode = sessionStorage.getItem("cozy-space-pending-join");
+  if (pendingCode) {
+    await handleJoinSpace(pendingCode);
+  }
+}
+
 async function handleSignOut() {
   if (!supabaseClient) return;
 
   await supabaseClient.auth.signOut();
   state.user = null;
   state.profile = null;
+  state.space = null;
+  state.partnerName = "Partner";
   updateUserBadge();
+  updatePartnerBadge();
   addActivity("Signed out.");
+  closeSettingsModal();
+  closeInviteModal();
 }
 
 async function syncAuthUser(user) {
@@ -425,44 +763,275 @@ async function syncAuthUser(user) {
 
   state.user = user;
 
-  const { data: profile } = await supabaseClient
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profile) {
-    state.profile = profile;
-    if (profile.gender && (profile.gender === "female" || profile.gender === "male")) {
-      setGender(profile.gender);
-    } else {
-      await supabaseClient
-        .from("profiles")
-        .update({
-          gender: state.gender,
-          theme_color: state.gender === "female" ? "#e30b5c" : "#A4D8FF",
-        })
-        .eq("id", user.id);
-    }
-  } else {
-    const { data: newProfile } = await supabaseClient
-      .from("profiles")
-      .insert({
-        id: user.id,
-        space_id: DEFAULT_SPACE_ID,
-        display_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Cozy Partner",
-        email: user.email,
-        gender: state.gender,
-        theme_color: state.gender === "female" ? "#e30b5c" : "#A4D8FF",
-      })
-      .select()
-      .maybeSingle();
-
-    if (newProfile) state.profile = newProfile;
+  // Process pending join if present
+  const pendingCode = sessionStorage.getItem("cozy-space-pending-join");
+  if (pendingCode) {
+    const { data: joinRes } = await supabaseClient.rpc("join_space_by_invite", {
+      p_invite_code: pendingCode,
+    });
+    sessionStorage.removeItem("cozy-space-pending-join");
+    window.history.replaceState({}, document.title, window.location.pathname);
   }
 
+  await fetchMySpace();
   updateUserBadge();
-  addActivity(`${getActorName()} connected.`);
+  updatePartnerBadge();
+}
+
+// -------------------------------------------------------------
+// Partner & Shared Space Management
+// -------------------------------------------------------------
+
+async function fetchMySpace() {
+  if (!supabaseClient || !state.user) return;
+
+  const { data, error } = await supabaseClient.rpc("get_or_create_my_space");
+  if (error || !data) {
+    console.error("Failed to load user space:", error);
+    return;
+  }
+
+  state.space = data;
+  if (data.space_id) {
+    const isSpaceChanged = state.spaceId !== data.space_id;
+    state.spaceId = data.space_id;
+    localStorage.setItem(STORAGE_KEYS.spaceId, state.spaceId);
+
+    if (isSpaceChanged) {
+      subscribeToRealtime();
+      await syncAllCloudData();
+    }
+  }
+
+  if (data.profile) {
+    state.profile = data.profile;
+    if (data.profile.gender) setGender(data.profile.gender);
+    if (typeof data.profile.haptics_enabled === "boolean") {
+      state.hapticsEnabled = data.profile.haptics_enabled;
+      localStorage.setItem(STORAGE_KEYS.haptics, String(state.hapticsEnabled));
+      updateHapticsUi();
+    }
+  }
+
+  updatePartnerBadge();
+  updateInviteModalUi();
+  updateSettingsModalUi();
+}
+
+function updateInviteModalUi() {
+  if (!els.inviteModal) return;
+
+  const isFull = state.space?.is_full || (state.space?.member_count >= 2);
+  const code = state.space?.invite_code || "COZYLOVE";
+  const inviteUrl = `${window.location.origin}/?join=${code}`;
+
+  if (els.inviteLinkInput) els.inviteLinkInput.value = inviteUrl;
+  if (els.spaceBadge) els.spaceBadge.textContent = isFull ? "2 / 2 Partners (Locked)" : "1 / 2 Partners";
+  if (els.spaceNameTag) els.spaceNameTag.textContent = state.space?.space_name || "Our Cozy Space";
+
+  if (els.inviteLockedNotice) els.inviteLockedNotice.hidden = !isFull;
+  if (els.copyInviteLinkButton) els.copyInviteLinkButton.disabled = isFull;
+  if (els.shareInviteButton) els.shareInviteButton.disabled = isFull;
+
+  if (els.copyInviteCodeOnlyButton) {
+    els.copyInviteCodeOnlyButton.textContent = `Copy Code: ${code}`;
+  }
+
+  // Render members list
+  if (els.spaceMembersList) {
+    els.spaceMembersList.innerHTML = "";
+    if (state.space?.members && state.space.members.length > 0) {
+      state.space.members.forEach((m) => {
+        const pill = document.createElement("span");
+        pill.className = "space-member-pill";
+        const icon = m.gender === "male" ? "♂" : "♀";
+        pill.innerHTML = `<span class="gender-swatch" style="background:${m.theme_color || '#e30b5c'}; width:10px; height:10px; border-radius:50%; display:inline-block;"></span>${m.display_name} (${icon})${m.is_me ? " • You" : ""}`;
+        els.spaceMembersList.appendChild(pill);
+      });
+    } else {
+      const pill = document.createElement("span");
+      pill.className = "space-member-pill";
+      pill.textContent = `You (${state.gender === "male" ? "♂" : "♀"})`;
+      els.spaceMembersList.appendChild(pill);
+    }
+
+    if (!isFull) {
+      const emptyPill = document.createElement("span");
+      emptyPill.className = "space-member-pill space-member-pill--empty";
+      emptyPill.innerHTML = "<span>💌</span> Waiting for partner to join...";
+      els.spaceMembersList.appendChild(emptyPill);
+    }
+  }
+}
+
+function updateSettingsModalUi() {
+  if (!els.settingsModal) return;
+
+  if (els.settingsAccountSummary) {
+    if (state.user) {
+      const code = state.space?.invite_code || "Active";
+      els.settingsAccountSummary.textContent = `${state.user.email} • Space Code: ${code}`;
+    } else {
+      els.settingsAccountSummary.textContent = "Not signed in (Local preview mode)";
+    }
+  }
+
+  if (els.settingsManageInviteButton) {
+    const isFull = state.space?.is_full || (state.space?.member_count >= 2);
+    els.settingsManageInviteButton.textContent = isFull ? "Paired & Connected (2/2)" : "Invite Partner (1/2)";
+  }
+
+  updateHapticsUi();
+}
+
+async function copyInviteLink() {
+  const link = els.inviteLinkInput?.value;
+  if (!link) return;
+
+  try {
+    await navigator.clipboard.writeText(link);
+    triggerHapticFeedback(els.heroCard, 30);
+    const origText = els.copyInviteLinkButton.textContent;
+    els.copyInviteLinkButton.textContent = "Copied! ✨";
+    setTimeout(() => {
+      els.copyInviteLinkButton.textContent = origText;
+    }, 2000);
+  } catch (err) {
+    els.inviteLinkInput?.select();
+    document.execCommand("copy");
+    els.copyInviteLinkButton.textContent = "Copied! ✨";
+  }
+}
+
+async function shareInvite() {
+  const link = els.inviteLinkInput?.value;
+  if (!link) return;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: "Cozy Space - Private Space for Two",
+        text: "Join our private Cozy Space for hugs, daily photos, and love notes: ",
+        url: link,
+      });
+      triggerHapticFeedback(els.heroCard, 30);
+    } catch (e) {
+      // User cancelled
+    }
+  } else {
+    await copyInviteLink();
+  }
+}
+
+async function copyInviteCodeOnly() {
+  const code = state.space?.invite_code;
+  if (!code) return;
+
+  try {
+    await navigator.clipboard.writeText(code);
+    triggerHapticFeedback(els.heroCard, 30);
+    const orig = els.copyInviteCodeOnlyButton.textContent;
+    els.copyInviteCodeOnlyButton.textContent = "Code Copied! ✨";
+    setTimeout(() => {
+      els.copyInviteCodeOnlyButton.textContent = orig;
+    }, 2000);
+  } catch (err) {
+    // Fallback
+  }
+}
+
+async function handleManualCodeJoin(event) {
+  event?.preventDefault();
+  const code = els.manualInviteCodeInput?.value.trim().toUpperCase();
+  if (!code) return;
+
+  await handleJoinSpace(code);
+}
+
+async function handleJoinSpace(inviteCode) {
+  if (!supabaseClient) return;
+
+  if (!state.user) {
+    sessionStorage.setItem("cozy-space-pending-join", inviteCode);
+    closeInviteModal();
+    openAuthModal();
+    showAuthStatus("Sign in with Google, GitHub, or Email to join your partner's space!", "is-info");
+    return;
+  }
+
+  showJoinStatus("Connecting to partner's space...", "is-info");
+
+  const { data, error } = await supabaseClient.rpc("join_space_by_invite", {
+    p_invite_code: inviteCode.trim().toUpperCase(),
+  });
+
+  if (error || !data?.success) {
+    const msg = data?.error || error?.message || "Failed to join space.";
+    showJoinStatus(msg, "is-error");
+    if (els.inviteModalHint) {
+      els.inviteModalHint.textContent = msg;
+      els.inviteModalHint.className = "auth-status-hint is-error";
+    }
+    return;
+  }
+
+  state.spaceId = data.space_id;
+  localStorage.setItem(STORAGE_KEYS.spaceId, state.spaceId);
+  sessionStorage.removeItem("cozy-space-pending-join");
+  window.history.replaceState({}, document.title, window.location.pathname);
+
+  await fetchMySpace();
+  subscribeToRealtime();
+  await syncAllCloudData();
+
+  triggerHapticFeedback(els.heroCard, [50, 60, 90]);
+  closeJoinModal();
+  closeInviteModal();
+  addActivity("Connected to partner's space! 💑");
+}
+
+async function checkUrlForInvite() {
+  const params = new URLSearchParams(window.location.search);
+  const joinCode = params.get("join") || params.get("invite");
+  if (!joinCode) return;
+
+  sessionStorage.setItem("cozy-space-pending-join", joinCode.trim().toUpperCase());
+
+  if (!supabaseClient) return;
+
+  const { data } = await supabaseClient.rpc("get_space_preview", {
+    p_invite_code: joinCode.trim().toUpperCase(),
+  });
+
+  if (!data || !data.valid) {
+    openJoinModal();
+    if (els.joinHostHeading) els.joinHostHeading.textContent = "Invalid Invite Link";
+    if (els.joinHostMessage) els.joinHostMessage.textContent = data?.error || "This space invite was not found.";
+    if (els.joinFullNotice) els.joinFullNotice.hidden = false;
+    if (els.joinActionSection) els.joinActionSection.hidden = true;
+    return;
+  }
+
+  openJoinModal();
+  if (els.joinHostHeading) els.joinHostHeading.textContent = `${data.host_name} invited you!`;
+  if (els.joinHostMessage) els.joinHostMessage.textContent = `Connect to "${data.space_name}". Only you and ${data.host_name} will share hugs, photos, and moments.`;
+  if (els.joinSpaceBadge) els.joinSpaceBadge.textContent = `${data.member_count} of 2 spots taken`;
+
+  if (data.is_full) {
+    if (els.joinFullNotice) els.joinFullNotice.hidden = false;
+    if (els.joinActionSection) els.joinActionSection.hidden = true;
+  } else {
+    if (els.joinFullNotice) els.joinFullNotice.hidden = true;
+    if (els.joinActionSection) els.joinActionSection.hidden = false;
+
+    if (state.user) {
+      if (els.joinLoggedInView) els.joinLoggedInView.hidden = false;
+      if (els.joinLoggedOutView) els.joinLoggedOutView.hidden = true;
+    } else {
+      if (els.joinLoggedInView) els.joinLoggedInView.hidden = true;
+      if (els.joinLoggedOutView) els.joinLoggedOutView.hidden = false;
+    }
+  }
 }
 
 // -------------------------------------------------------------
@@ -493,17 +1062,12 @@ async function initSupabase() {
         state.user = null;
         state.profile = null;
         updateUserBadge();
+        updatePartnerBadge();
       }
     });
 
     // Initial load from cloud
-    await Promise.allSettled([
-      syncHugsFromSupabase(),
-      syncNotesFromSupabase(),
-      syncPlansFromSupabase(),
-      syncPhotosFromSupabase(),
-      syncActivityFromSupabase(),
-    ]);
+    await syncAllCloudData();
 
     // Setup live WebSockets subscriptions
     subscribeToRealtime();
@@ -525,13 +1089,23 @@ function setConnectionStatus(isLive) {
   }
 }
 
+async function syncAllCloudData() {
+  await Promise.allSettled([
+    syncHugsFromSupabase(),
+    syncNotesFromSupabase(),
+    syncPlansFromSupabase(),
+    syncPhotosFromSupabase(),
+    syncActivityFromSupabase(),
+  ]);
+}
+
 async function syncHugsFromSupabase() {
-  if (!supabaseClient) return;
+  if (!supabaseClient || !state.spaceId) return;
 
   const { count, error } = await supabaseClient
     .from("hugs")
     .select("*", { count: "exact", head: true })
-    .eq("space_id", DEFAULT_SPACE_ID);
+    .eq("space_id", state.spaceId);
 
   if (!error && count !== null) {
     state.totalHugs = count;
@@ -540,7 +1114,7 @@ async function syncHugsFromSupabase() {
   const { data: latestHug } = await supabaseClient
     .from("hugs")
     .select("sender_name, created_at")
-    .eq("space_id", DEFAULT_SPACE_ID)
+    .eq("space_id", state.spaceId)
     .order("created_at", { ascending: false })
     .limit(1);
 
@@ -552,12 +1126,12 @@ async function syncHugsFromSupabase() {
 }
 
 async function syncNotesFromSupabase() {
-  if (!supabaseClient) return;
+  if (!supabaseClient || !state.spaceId) return;
 
   const { data: notes, error } = await supabaseClient
     .from("love_notes")
     .select("*")
-    .eq("space_id", DEFAULT_SPACE_ID)
+    .eq("space_id", state.spaceId)
     .order("created_at", { ascending: false });
 
   if (!error && notes && notes.length > 0) {
@@ -574,12 +1148,12 @@ async function syncNotesFromSupabase() {
 }
 
 async function syncPlansFromSupabase() {
-  if (!supabaseClient) return;
+  if (!supabaseClient || !state.spaceId) return;
 
   const { data: plans, error } = await supabaseClient
     .from("calendar_events")
     .select("*")
-    .eq("space_id", DEFAULT_SPACE_ID);
+    .eq("space_id", state.spaceId);
 
   if (!error && plans && plans.length > 0) {
     state.plans = plans.map((p) => ({
@@ -596,12 +1170,12 @@ async function syncPlansFromSupabase() {
 }
 
 async function syncPhotosFromSupabase() {
-  if (!supabaseClient) return;
+  if (!supabaseClient || !state.spaceId) return;
 
   const { data: photos, error } = await supabaseClient
     .from("photos")
     .select("storage_path, caption")
-    .eq("space_id", DEFAULT_SPACE_ID)
+    .eq("space_id", state.spaceId)
     .order("created_at", { ascending: false })
     .limit(1);
 
@@ -613,12 +1187,12 @@ async function syncPhotosFromSupabase() {
 }
 
 async function syncActivityFromSupabase() {
-  if (!supabaseClient) return;
+  if (!supabaseClient || !state.spaceId) return;
 
   const { data: logs, error } = await supabaseClient
     .from("activity_logs")
     .select("actor_name, details, created_at")
-    .eq("space_id", DEFAULT_SPACE_ID)
+    .eq("space_id", state.spaceId)
     .order("created_at", { ascending: false })
     .limit(5);
 
@@ -631,68 +1205,69 @@ async function syncActivityFromSupabase() {
 }
 
 function subscribeToRealtime() {
-  if (!supabaseClient) return;
+  if (!supabaseClient || !state.spaceId) return;
 
-  // Realtime Hugs
-  supabaseClient
-    .channel("public:hugs")
+  if (state.realtimeChannel) {
+    supabaseClient.removeChannel(state.realtimeChannel);
+    state.realtimeChannel = null;
+  }
+
+  const channel = supabaseClient
+    .channel(`cozy-space-${state.spaceId}`)
     .on(
       "postgres_changes",
-      { event: "INSERT", schema: "public", table: "hugs", filter: `space_id=eq.${DEFAULT_SPACE_ID}` },
+      { event: "INSERT", schema: "public", table: "hugs", filter: `space_id=eq.${state.spaceId}` },
       (payload) => {
         const sender = payload.new.sender_name || "Partner";
         state.totalHugs += 1;
         state.lastActionBy = sender;
         renderStats();
 
-        // Trigger remote heart burst if from partner
+        // Trigger pulse + haptic vibration for partner
         if (sender !== getActorName()) {
-          triggerHapticFeedback(els.heroCard);
+          triggerHapticFeedback(els.heroCard, [40, 50, 80]);
           createHeartParticles(els.heroCard);
-          addActivity(`${sender} sent a warm hug \u2665`);
+          addActivity(`${sender} sent a warm hug ♥`);
         }
       }
     )
-    .subscribe();
-
-  // Realtime Love Notes
-  supabaseClient
-    .channel("public:love_notes")
     .on(
       "postgres_changes",
-      { event: "*", schema: "public", table: "love_notes", filter: `space_id=eq.${DEFAULT_SPACE_ID}` },
+      { event: "*", schema: "public", table: "love_notes", filter: `space_id=eq.${state.spaceId}` },
       async () => {
         await syncNotesFromSupabase();
       }
     )
-    .subscribe();
-
-  // Realtime Calendar Events
-  supabaseClient
-    .channel("public:calendar_events")
     .on(
       "postgres_changes",
-      { event: "*", schema: "public", table: "calendar_events", filter: `space_id=eq.${DEFAULT_SPACE_ID}` },
+      { event: "*", schema: "public", table: "calendar_events", filter: `space_id=eq.${state.spaceId}` },
       async () => {
         await syncPlansFromSupabase();
       }
     )
-    .subscribe();
-
-  // Realtime Activity Logs
-  supabaseClient
-    .channel("public:activity_logs")
     .on(
       "postgres_changes",
-      { event: "INSERT", schema: "public", table: "activity_logs", filter: `space_id=eq.${DEFAULT_SPACE_ID}` },
+      { event: "*", schema: "public", table: "photos", filter: `space_id=eq.${state.spaceId}` },
+      async () => {
+        await syncPhotosFromSupabase();
+      }
+    )
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "activity_logs", filter: `space_id=eq.${state.spaceId}` },
       (payload) => {
         const log = payload.new;
         if (log.actor_name !== getActorName()) {
           addActivity(`${log.actor_name}: ${log.details}`);
         }
+        if (log.action_type === "partner_connected") {
+          fetchMySpace();
+        }
       }
     )
     .subscribe();
+
+  state.realtimeChannel = channel;
 }
 
 // -------------------------------------------------------------
@@ -718,50 +1293,34 @@ function setActiveView(viewName) {
 // -------------------------------------------------------------
 
 async function handleHugInteraction(sourceElement) {
-  await triggerHapticFeedback(els.heroCard);
+  triggerHapticFeedback(els.heroCard, [40, 50, 80]);
   createHeartParticles(sourceElement || getActiveContainer());
 
   const actor = getActorName();
   state.totalHugs += 1;
   state.lastActionBy = actor;
   renderStats();
-  addActivity("You sent a warm hug \u2665");
+  addActivity("You sent a warm hug ♥");
 
-  if (supabaseClient) {
+  if (supabaseClient && state.spaceId) {
     try {
       await supabaseClient.from("hugs").insert({
-        space_id: DEFAULT_SPACE_ID,
+        space_id: state.spaceId,
+        sender_id: state.user?.id || null,
         sender_name: actor,
       });
 
       await supabaseClient.from("activity_logs").insert({
-        space_id: DEFAULT_SPACE_ID,
+        space_id: state.spaceId,
+        actor_id: state.user?.id || null,
         actor_name: actor,
         action_type: "hug_sent",
-        details: "Sent a warm hug \u2665",
+        details: "Sent a warm hug ♥",
       });
     } catch (e) {
       console.error("Failed to persist hug to cloud:", e);
     }
   }
-}
-
-async function triggerHapticFeedback(fallbackTarget) {
-  const isNative = isNativeCapacitorRuntime();
-
-  if (isNative) {
-    try {
-      const haptics = await getCapacitorHaptics();
-      if (haptics?.Haptics && haptics?.ImpactStyle) {
-        await haptics.Haptics.impact({ style: haptics.ImpactStyle.Medium });
-        return;
-      }
-    } catch (error) {
-      console.warn("Native haptics unavailable, using fallback.", error);
-    }
-  }
-
-  emulateHapticFeedback(fallbackTarget);
 }
 
 function isNativeCapacitorRuntime() {
@@ -770,32 +1329,31 @@ function isNativeCapacitorRuntime() {
   if (typeof capacitor.isNativePlatform === "function") {
     return capacitor.isNativePlatform();
   }
-  return Boolean(capacitor.Plugins);
+  return Boolean(capacitor.platform && capacitor.platform !== "web");
 }
 
 async function getCapacitorHaptics() {
   if (window.Capacitor?.Plugins?.Haptics) {
     return {
       Haptics: window.Capacitor.Plugins.Haptics,
-      ImpactStyle: { Medium: "MEDIUM" },
+      ImpactStyle: {
+        Heavy: "HEAVY",
+        Medium: "MEDIUM",
+        Light: "LIGHT",
+      },
     };
   }
-  return import("@capacitor/haptics");
-}
 
-function emulateHapticFeedback(target) {
-  const shakeTarget = target || getActiveContainer();
-  shakeTarget.classList.remove("visual-shake");
+  if (window.CapacitorCustomHaptics) {
+    return window.CapacitorCustomHaptics;
+  }
 
-  requestAnimationFrame(() => {
-    shakeTarget.classList.add("visual-shake");
-    window.setTimeout(() => shakeTarget.classList.remove("visual-shake"), 430);
-  });
+  return null;
 }
 
 function renderStats() {
-  els.hugCount.textContent = state.totalHugs.toLocaleString();
-  els.lastAction.textContent = `Last action by ${state.lastActionBy}.`;
+  els.hugCount.textContent = new Intl.NumberFormat().format(state.totalHugs);
+  els.lastAction.textContent = `Last action by ${state.lastActionBy || "someone cozy"}.`;
 }
 
 function renderToday() {
@@ -821,10 +1379,10 @@ async function handlePhotoSelected(event) {
     els.photoStatus.textContent = "Uploading to Supabase cloud...";
     addActivity("New memory photo selected.");
 
-    if (supabaseClient) {
+    if (supabaseClient && state.spaceId) {
       try {
         const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-        const filePath = `${DEFAULT_SPACE_ID}/${Date.now()}-${cleanName}`;
+        const filePath = `${state.spaceId}/${Date.now()}-${cleanName}`;
 
         const { error: uploadError } = await supabaseClient.storage
           .from("photos")
@@ -841,14 +1399,16 @@ async function handlePhotoSelected(event) {
           renderDailyPhoto();
 
           await supabaseClient.from("photos").insert({
-            space_id: DEFAULT_SPACE_ID,
+            space_id: state.spaceId,
+            uploader_id: state.user?.id || null,
             storage_path: cloudUrl,
             caption: file.name,
             uploader_name: getActorName(),
           });
 
           await supabaseClient.from("activity_logs").insert({
-            space_id: DEFAULT_SPACE_ID,
+            space_id: state.spaceId,
+            actor_id: state.user?.id || null,
             actor_name: getActorName(),
             action_type: "photo_shared",
             details: "Added a new memory photo",
@@ -860,7 +1420,7 @@ async function handlePhotoSelected(event) {
           els.photoStatus.textContent = "Saved locally (Cloud upload error).";
         }
       } catch (err) {
-        console.error("Failed to upload photo:", err);
+        console.error("Photo cloud sync exception:", err);
       }
     }
   });
@@ -869,16 +1429,16 @@ async function handlePhotoSelected(event) {
 }
 
 function renderDailyPhoto() {
-  const hasPhoto = Boolean(state.dailyPhotoDataUrl);
-  els.photoPreview.hidden = !hasPhoto;
-  els.photoEmpty.hidden = hasPhoto;
-  els.photoDeleteButton.hidden = !hasPhoto;
-  els.photoStatus.textContent = hasPhoto
-    ? "Synced with cloud memory scrapbook."
-    : "Tap to upload a memory photo to Supabase cloud.";
-
-  if (hasPhoto) {
+  if (state.dailyPhotoDataUrl) {
     els.photoPreview.src = state.dailyPhotoDataUrl;
+    els.photoPreview.hidden = false;
+    els.photoEmpty.hidden = true;
+    els.photoDeleteButton.hidden = false;
+  } else {
+    els.photoPreview.removeAttribute("src");
+    els.photoPreview.hidden = true;
+    els.photoEmpty.hidden = false;
+    els.photoDeleteButton.hidden = true;
   }
 }
 
@@ -886,9 +1446,13 @@ async function deleteDailyPhoto() {
   state.dailyPhotoDataUrl = "";
   localStorage.removeItem(STORAGE_KEYS.photo);
   els.photoInput.value = "";
-  els.photoPreview.removeAttribute("src");
   renderDailyPhoto();
+  els.photoStatus.textContent = "Photo slot cleared.";
   addActivity("Memory photo cleared.");
+
+  if (supabaseClient && state.spaceId) {
+    await supabaseClient.from("photos").delete().eq("space_id", state.spaceId);
+  }
 }
 
 // -------------------------------------------------------------
@@ -896,32 +1460,25 @@ async function deleteDailyPhoto() {
 // -------------------------------------------------------------
 
 function startNewNote() {
-  state.editingNoteId = null;
-  els.noteModalTitle.textContent = "New Note";
-  els.noteTitleInput.value = "";
-  els.noteBodyInput.value = "";
-  els.deleteNoteButton.disabled = true;
+  clearNoteForm();
   openNoteModal();
 }
 
 async function saveCurrentNote(event) {
   event.preventDefault();
 
-  const title = els.noteTitleInput.value.trim() || "Untitled note";
+  const title = els.noteTitleInput.value.trim();
   const body = els.noteBodyInput.value.trim();
-
-  if (!body) {
-    els.noteBodyInput.focus();
-    return;
-  }
+  if (!title || !body) return;
 
   const savedAt = new Date().toISOString();
   const actor = getActorName();
 
   if (state.editingNoteId) {
-    state.notes = state.notes.map((note) =>
-      note.id === state.editingNoteId ? { ...note, title, body, savedAt } : note
-    );
+    state.notes = state.notes.map((note) => {
+      if (note.id !== state.editingNoteId) return note;
+      return { ...note, title, body, savedAt, author: actor };
+    });
     addActivity("Love note updated.");
 
     if (supabaseClient && !state.editingNoteId.startsWith("local-")) {
@@ -942,11 +1499,12 @@ async function saveCurrentNote(event) {
     });
     addActivity("New love note saved.");
 
-    if (supabaseClient) {
+    if (supabaseClient && state.spaceId) {
       const { data } = await supabaseClient
         .from("love_notes")
         .insert({
-          space_id: DEFAULT_SPACE_ID,
+          space_id: state.spaceId,
+          author_id: state.user?.id || null,
           title,
           body,
           author_name: actor,
@@ -959,7 +1517,8 @@ async function saveCurrentNote(event) {
       }
 
       await supabaseClient.from("activity_logs").insert({
-        space_id: DEFAULT_SPACE_ID,
+        space_id: state.spaceId,
+        actor_id: state.user?.id || null,
         actor_name: actor,
         action_type: "note_added",
         details: `Left a note: "${title}"`,
@@ -967,6 +1526,7 @@ async function saveCurrentNote(event) {
     }
   }
 
+  triggerHapticFeedback(els.heroCard, 30);
   persistNotes();
   renderNotes();
   els.deleteNoteButton.disabled = false;
@@ -992,8 +1552,8 @@ async function deleteCurrentNote() {
   state.notes = state.notes.filter((note) => note.id !== noteToDelete);
   persistNotes();
   renderNotes();
-  closeNoteModal();
   clearNoteForm();
+  closeNoteModal();
   addActivity("Love note deleted.");
 
   if (supabaseClient && !noteToDelete.startsWith("local-")) {
@@ -1074,7 +1634,7 @@ function createHeartParticles(sourceElement) {
   for (let index = 0; index < 12; index += 1) {
     const heart = document.createElement("span");
     heart.className = "heart-particle";
-    heart.textContent = "\u2665";
+    heart.textContent = "♥";
     heart.style.left = `${originX}px`;
     heart.style.top = `${originY}px`;
     heart.style.setProperty("--drift", `${randomBetween(-110, 110)}px`);
@@ -1101,79 +1661,80 @@ function getActiveContainer() {
 }
 
 // -------------------------------------------------------------
-// Relationship Countdown & Calendar
+// Calendar, Relationship Countdown & Scheduler
 // -------------------------------------------------------------
 
 function renderRelationshipDates() {
   const now = new Date();
-  const nextMonthsary = getNextMonthlyDate(now, state.relationshipStart.getDate());
+  const nextMonthsary = getNextMonthlyDate(now, 17);
   const nextAnniversary = getNextAnniversary(now, state.relationshipStart);
-  const completedMonths = getCompletedMonths(now, state.relationshipStart);
-  const daysTogether = getWholeDayDifference(now, state.relationshipStart);
+  const daysToMonthsary = getCountdownDays(now, nextMonthsary);
+  const daysToAnniversary = getCountdownDays(now, nextAnniversary);
+  const totalDaysTogether = getWholeDayDifference(now, state.relationshipStart);
 
-  els.monthsaryDays.textContent = getCountdownDays(now, nextMonthsary).toString();
-  els.monthsaryDate.textContent = `${formatShortDate(nextMonthsary)} - ${getMonthsaryLabel(nextMonthsary)}`;
+  els.monthsaryDays.textContent = String(daysToMonthsary);
+  els.monthsaryDate.textContent = formatShortDate(nextMonthsary);
+  els.anniversaryDays.textContent = String(daysToAnniversary);
+  els.anniversaryDate.textContent = formatShortDate(nextAnniversary);
 
-  els.anniversaryDays.textContent = getCountdownDays(now, nextAnniversary).toString();
-  els.anniversaryDate.textContent = `${formatShortDate(nextAnniversary)} - ${nextAnniversary.getFullYear()}`;
+  els.togetherSummary.textContent =
+    totalDaysTogether <= 0
+      ? "May 17, 2026 starts the story."
+      : `${totalDaysTogether} days of warmth, small memories, and ordinary magic.`;
 
-  els.togetherSummary.textContent = `${daysTogether} days together and ${completedMonths} month${completedMonths === 1 ? "" : "s"} official.`;
-
-  renderCalendar(now);
+  renderDashboardCalendar(now);
 }
 
-function renderCalendar(date) {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const firstDay = new Date(year, month, 1, 12);
-  const totalDays = new Date(year, month + 1, 0, 12).getDate();
-  const monthLabel = new Intl.DateTimeFormat("en", {
+function renderDashboardCalendar(activeDate) {
+  const year = activeDate.getFullYear();
+  const month = activeDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  els.calendarTitle.textContent = new Intl.DateTimeFormat("en", {
     month: "long",
     year: "numeric",
-  }).format(firstDay);
+  }).format(activeDate);
 
-  els.calendarTitle.textContent = monthLabel;
   els.calendarGrid.innerHTML = "";
 
-  for (let index = 0; index < firstDay.getDay(); index += 1) {
-    const emptyCell = document.createElement("span");
-    emptyCell.className = "calendar-day is-empty";
-    els.calendarGrid.appendChild(emptyCell);
-  }
+  for (let index = 0; index < 35; index += 1) {
+    const dayElement = document.createElement("span");
+    dayElement.className = "calendar-day";
 
-  for (let day = 1; day <= totalDays; day += 1) {
-    const dayCell = document.createElement("span");
-    const isToday = day === date.getDate();
-    const isMonthsary = day === state.relationshipStart.getDate();
-    const dayDate = new Date(year, month, day, 12);
-    const hasPlan = getPlansForDate(dayDate).length > 0;
-    const isPast = isPastDate(dayDate);
-    const isStartDate =
-      year === state.relationshipStart.getFullYear() &&
-      month === state.relationshipStart.getMonth() &&
-      day === state.relationshipStart.getDate();
+    if (index < firstDay) {
+      const prevDate = daysInPrevMonth - firstDay + index + 1;
+      dayElement.textContent = String(prevDate);
+      dayElement.classList.add("is-muted");
+    } else if (index >= firstDay + daysInMonth) {
+      const nextDate = index - (firstDay + daysInMonth) + 1;
+      dayElement.textContent = String(nextDate);
+      dayElement.classList.add("is-muted");
+    } else {
+      const currentDay = index - firstDay + 1;
+      const thisDate = new Date(year, month, currentDay);
+      dayElement.textContent = String(currentDay);
 
-    dayCell.className = "calendar-day";
-    dayCell.textContent = day.toString();
-    dayCell.setAttribute("aria-label", getCalendarDayLabel(year, month, day, isMonthsary, isToday));
+      if (currentDay === 17) {
+        dayElement.classList.add("is-monthsary");
+      }
+      if (isSameDay(thisDate, new Date())) {
+        dayElement.classList.add("is-today");
+      }
+    }
 
-    if (isToday) dayCell.classList.add("is-today");
-    if (isMonthsary) dayCell.classList.add("is-monthsary");
-    if (isStartDate) dayCell.classList.add("is-start-date");
-    if (hasPlan) dayCell.classList.add("has-plan");
-    if (isPast) dayCell.classList.add("is-past");
-
-    els.calendarGrid.appendChild(dayCell);
+    els.calendarGrid.appendChild(dayElement);
   }
 }
 
-function openCalendarModal(date) {
-  state.selectedPlanDate = startOfDay(date);
-  state.schedulerMonth = new Date(date.getFullYear(), date.getMonth(), 1, 12);
-  clearPlanForm();
-  renderScheduler();
+function openCalendarModal(initialDate) {
+  state.schedulerMonth = new Date(initialDate.getFullYear(), initialDate.getMonth(), 1, 12);
+  state.selectedPlanDate = startOfDay(initialDate);
   els.calendarModal.classList.add("is-open");
   els.calendarModal.setAttribute("aria-hidden", "false");
+  renderScheduler();
+  renderSelectedPlanDate();
 }
 
 function closeCalendarModal() {
@@ -1181,10 +1742,10 @@ function closeCalendarModal() {
   els.calendarModal.setAttribute("aria-hidden", "true");
 }
 
-function shiftSchedulerMonth(direction) {
+function shiftSchedulerMonth(offset) {
   state.schedulerMonth = new Date(
     state.schedulerMonth.getFullYear(),
-    state.schedulerMonth.getMonth() + direction,
+    state.schedulerMonth.getMonth() + offset,
     1,
     12
   );
@@ -1194,112 +1755,139 @@ function shiftSchedulerMonth(direction) {
 function renderScheduler() {
   const year = state.schedulerMonth.getFullYear();
   const month = state.schedulerMonth.getMonth();
-  const firstDay = new Date(year, month, 1, 12);
-  const totalDays = new Date(year, month + 1, 0, 12).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
 
   els.schedulerMonthTitle.textContent = new Intl.DateTimeFormat("en", {
     month: "long",
     year: "numeric",
-  }).format(firstDay);
+  }).format(state.schedulerMonth);
+
   els.schedulerGrid.innerHTML = "";
 
-  for (let index = 0; index < firstDay.getDay(); index += 1) {
-    const emptyCell = document.createElement("span");
-    emptyCell.className = "calendar-day is-empty";
-    els.schedulerGrid.appendChild(emptyCell);
+  for (let index = 0; index < 42; index += 1) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "calendar-cell";
+
+    let cellDate;
+    let isCurrentMonth = true;
+
+    if (index < firstDay) {
+      const prevDate = daysInPrevMonth - firstDay + index + 1;
+      cellDate = new Date(year, month - 1, prevDate, 12);
+      isCurrentMonth = false;
+    } else if (index >= firstDay + daysInMonth) {
+      const nextDate = index - (firstDay + daysInMonth) + 1;
+      cellDate = new Date(year, month + 1, nextDate, 12);
+      isCurrentMonth = false;
+    } else {
+      const day = index - firstDay + 1;
+      cellDate = new Date(year, month, day, 12);
+    }
+
+    const dayNumber = cellDate.getDate();
+    const isPast = isPastDate(cellDate);
+    const isToday = isSameDay(cellDate, new Date());
+    const isSelected = isSameDay(cellDate, state.selectedPlanDate);
+    const plans = getPlansForDate(cellDate);
+
+    button.innerHTML = `<span class="calendar-cell-date">${dayNumber}</span>`;
+
+    if (!isCurrentMonth) button.classList.add("is-muted");
+    if (isPast) button.classList.add("is-past");
+    if (isToday) button.classList.add("is-today");
+    if (isSelected) button.classList.add("is-selected");
+
+    if (plans.length > 0) {
+      const badge = document.createElement("span");
+      badge.className = "calendar-cell-pill";
+      badge.textContent = plans[0].title;
+      button.appendChild(badge);
+    }
+
+    button.addEventListener("click", () => {
+      state.selectedPlanDate = startOfDay(cellDate);
+      renderScheduler();
+      renderSelectedPlanDate();
+    });
+
+    els.schedulerGrid.appendChild(button);
   }
-
-  for (let day = 1; day <= totalDays; day += 1) {
-    const dayDate = new Date(year, month, day, 12);
-    const dayCell = document.createElement("button");
-    const hasPlan = getPlansForDate(dayDate).length > 0;
-    const isPast = isPastDate(dayDate);
-
-    dayCell.className = "calendar-day";
-    dayCell.type = "button";
-    dayCell.textContent = day.toString();
-    dayCell.setAttribute(
-      "aria-label",
-      getCalendarDayLabel(year, month, day, day === 17, isSameDay(dayDate, new Date()))
-    );
-    dayCell.addEventListener("click", () => selectPlanDate(dayDate));
-
-    if (isSameDay(dayDate, new Date())) dayCell.classList.add("is-today");
-    if (day === state.relationshipStart.getDate()) dayCell.classList.add("is-monthsary");
-    if (hasPlan) dayCell.classList.add("has-plan");
-    if (isPast) dayCell.classList.add("is-past", "is-disabled");
-    if (isSameDay(dayDate, state.selectedPlanDate)) dayCell.classList.add("is-selected");
-
-    els.schedulerGrid.appendChild(dayCell);
-  }
-
-  renderSelectedPlanDate();
-}
-
-function selectPlanDate(date) {
-  state.selectedPlanDate = startOfDay(date);
-  clearPlanForm();
-  renderScheduler();
 }
 
 function renderSelectedPlanDate() {
-  const locked = isPastDate(state.selectedPlanDate);
+  const dateStr = formatLongDate(state.selectedPlanDate);
+  els.selectedPlanDate.textContent = dateStr;
+
+  const isPast = isPastDate(state.selectedPlanDate);
+  els.planLockMessage.hidden = !isPast;
+  els.savePlanButton.disabled = isPast;
+  els.planTitleInput.disabled = isPast;
+  els.planBodyInput.disabled = isPast;
+
   const plans = getPlansForDate(state.selectedPlanDate);
-  els.selectedPlanDate.textContent = formatLongDate(state.selectedPlanDate);
-  els.planForm.classList.toggle("is-locked", locked);
-  els.planTitleInput.disabled = locked;
-  els.planBodyInput.disabled = locked;
-  els.savePlanButton.disabled = locked;
-  els.deletePlanButton.disabled = locked || !state.editingPlanId;
-  els.planLockMessage.textContent = locked
-    ? "This date has passed. Existing plans are view-only."
-    : "Add or edit plans for this day.";
-  renderPlansList(plans, locked);
+  renderPlansList(plans);
+
+  if (state.editingPlanId) {
+    const activePlan = state.plans.find((p) => p.id === state.editingPlanId);
+    if (activePlan) {
+      els.planTitleInput.value = activePlan.title;
+      els.planBodyInput.value = activePlan.body || "";
+      els.deletePlanButton.disabled = isPast;
+      return;
+    }
+  }
+
+  clearPlanForm();
+  els.deletePlanButton.disabled = true;
 }
 
-function renderPlansList(plans, locked) {
+function renderPlansList(plans) {
   els.plansList.innerHTML = "";
 
   if (plans.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "plan-item";
-    empty.textContent = locked ? "No saved plans for this past date." : "No plans yet for this day.";
+    const empty = document.createElement("li");
+    empty.className = "plan-history-item plan-history-item--empty";
+    empty.textContent = "No special plans recorded for this day yet.";
     els.plansList.appendChild(empty);
     return;
   }
 
   plans.forEach((plan) => {
-    const item = document.createElement("button");
-    item.className = "plan-item";
-    item.type = "button";
-    item.innerHTML = `<strong>${escapeHtml(plan.title)}</strong>${escapeHtml(plan.body || "No extra details.")}`;
-    item.addEventListener("click", () => editPlan(plan.id));
+    const item = document.createElement("li");
+    item.className = "plan-history-item";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "plan-history-button";
+    button.addEventListener("click", () => editPlan(plan.id));
+
+    const title = document.createElement("strong");
+    title.textContent = plan.title;
+
+    const desc = document.createElement("span");
+    desc.textContent = plan.body;
+
+    button.append(title, desc);
+    item.appendChild(button);
     els.plansList.appendChild(item);
   });
 }
 
 async function saveCurrentPlan(event) {
   event.preventDefault();
-
-  if (isPastDate(state.selectedPlanDate)) {
-    els.planLockMessage.textContent = "Past dates are locked, so this plan cannot be saved.";
-    return;
-  }
+  if (isPastDate(state.selectedPlanDate)) return;
 
   const title = els.planTitleInput.value.trim();
   const body = els.planBodyInput.value.trim();
-
-  if (!title) {
-    els.planTitleInput.focus();
-    return;
-  }
+  if (!title) return;
 
   const dateStr = toDateKey(state.selectedPlanDate);
 
   if (state.editingPlanId) {
-    state.plans = state.plans.map((plan) =>
-      plan.id === state.editingPlanId ? { ...plan, title, body, updatedAt: new Date().toISOString() } : plan
-    );
+    state.plans = state.plans.map((p) => (p.id === state.editingPlanId ? { ...p, title, body } : p));
     addActivity("Calendar plan updated.");
 
     if (supabaseClient && !state.editingPlanId.startsWith("local-")) {
@@ -1310,21 +1898,22 @@ async function saveCurrentPlan(event) {
     }
   } else {
     const localId = createId();
+    state.editingPlanId = localId;
     state.plans.push({
       id: localId,
       date: dateStr,
       title,
       body,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     });
     addActivity("Calendar plan added.");
 
-    if (supabaseClient) {
+    if (supabaseClient && state.spaceId) {
       const { data } = await supabaseClient
         .from("calendar_events")
         .insert({
-          space_id: DEFAULT_SPACE_ID,
+          space_id: state.spaceId,
+          creator_id: state.user?.id || null,
           event_date: dateStr,
           title,
           description: body,
@@ -1338,7 +1927,8 @@ async function saveCurrentPlan(event) {
       }
 
       await supabaseClient.from("activity_logs").insert({
-        space_id: DEFAULT_SPACE_ID,
+        space_id: state.spaceId,
+        actor_id: state.user?.id || null,
         actor_name: getActorName(),
         action_type: "calendar_updated",
         details: `Added plan for ${dateStr}: "${title}"`,
@@ -1346,6 +1936,7 @@ async function saveCurrentPlan(event) {
     }
   }
 
+  triggerHapticFeedback(els.heroCard, 30);
   persistPlans();
   clearPlanForm();
   renderRelationshipDates();
@@ -1430,34 +2021,6 @@ function getCountdownDays(fromDate, targetDate) {
 
 function getWholeDayDifference(fromDate, startDate) {
   return Math.max(0, Math.floor((startOfDay(fromDate) - startOfDay(startDate)) / 86400000));
-}
-
-function getMonthsaryLabel(date) {
-  const months = getCompletedMonths(date, state.relationshipStart);
-  return `${months}${getOrdinalSuffix(months)} monthsary`;
-}
-
-function getCalendarDayLabel(year, month, day, isMonthsary, isToday) {
-  const dateLabel = formatShortDate(new Date(year, month, day, 12));
-  const details = [];
-  if (isToday) details.push("today");
-  if (isMonthsary) details.push("monthsary date");
-  return details.length ? `${dateLabel}, ${details.join(", ")}` : dateLabel;
-}
-
-function getOrdinalSuffix(value) {
-  const mod100 = value % 100;
-  if (mod100 >= 11 && mod100 <= 13) return "th";
-  switch (value % 10) {
-    case 1:
-      return "st";
-    case 2:
-      return "nd";
-    case 3:
-      return "rd";
-    default:
-      return "th";
-  }
 }
 
 function formatShortDate(date) {
