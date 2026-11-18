@@ -1,9 +1,16 @@
 "use strict";
 
+const SUPABASE_URL = "https://fiauyvcbdhgijxwvhvaz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_90avx2PkIt7R5SoD71NwcA_MIx25IMy";
+const DEFAULT_SPACE_ID = "00000000-0000-0000-0000-000000000001";
+
+let supabaseClient = null;
+
 const STORAGE_KEYS = {
   notes: "cozy-space-love-notes",
   photo: "cozy-space-daily-photo",
   plans: "cozy-space-plans",
+  theme: "cozy-space-active-theme",
 };
 
 const state = {
@@ -11,8 +18,8 @@ const state = {
   totalHugs: 0,
   lastActionBy: "Mine",
   dailyGiftUnlockedAt: null,
-  partnerName: "Love",
-  activeTheme: "me",
+  partnerName: "Partner",
+  activeTheme: localStorage.getItem(STORAGE_KEYS.theme) || "me",
   relationshipStart: new Date(2026, 4, 17, 12),
   notes: [],
   plans: [],
@@ -21,6 +28,7 @@ const state = {
   selectedPlanDate: startOfDay(new Date()),
   schedulerMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12),
   dailyPhotoDataUrl: "",
+  isLive: false,
 };
 
 const els = {
@@ -78,8 +86,8 @@ const els = {
 
 init();
 
-function init() {
-  loadClientState();
+async function init() {
+  loadLocalState();
   renderToday();
   renderStats();
   renderRelationshipDates();
@@ -87,15 +95,15 @@ function init() {
   renderNotes();
   wireUiEvents();
   setTheme(state.activeTheme);
-  setupRealtimePreviewListeners();
-  setConnectionStatus(false);
   window.setInterval(renderRelationshipDates, 60 * 1000);
+
+  await initSupabase();
 }
 
-function loadClientState() {
+function loadLocalState() {
   state.notes = readJson(STORAGE_KEYS.notes, [
     {
-      id: createId(),
+      id: "local-first-note",
       title: "First tiny note",
       body: "You make ordinary days feel like tiny celebrations.",
       savedAt: new Date().toISOString(),
@@ -114,7 +122,7 @@ function wireUiEvents() {
   els.profileHisButton?.addEventListener("click", () => setTheme("his"));
 
   els.hugButton.addEventListener("click", async (event) => {
-    await handleHugInteraction(event.currentTarget, "You sent a warm hug from your color.");
+    await handleHugInteraction(event.currentTarget);
   });
 
   els.photoChooseButton.addEventListener("click", () => els.photoInput.click());
@@ -148,6 +156,223 @@ function wireUiEvents() {
   });
 }
 
+// -------------------------------------------------------------
+// Supabase Cloud & Realtime Integration
+// -------------------------------------------------------------
+
+async function initSupabase() {
+  if (!window.supabase) {
+    console.warn("Supabase SDK not loaded yet, using offline fallback.");
+    setConnectionStatus(false);
+    return;
+  }
+
+  try {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Initial load from cloud
+    await Promise.allSettled([
+      syncHugsFromSupabase(),
+      syncNotesFromSupabase(),
+      syncPlansFromSupabase(),
+      syncPhotosFromSupabase(),
+      syncActivityFromSupabase(),
+    ]);
+
+    // Setup live WebSockets subscriptions
+    subscribeToRealtime();
+    setConnectionStatus(true);
+  } catch (err) {
+    console.error("Supabase initialization error:", err);
+    setConnectionStatus(false);
+  }
+}
+
+function setConnectionStatus(isLive) {
+  state.isLive = isLive;
+  if (isLive) {
+    els.connectionStatus.textContent = "Live connected";
+    els.connectionStatus.classList.add("is-live");
+  } else {
+    els.connectionStatus.textContent = "Local offline";
+    els.connectionStatus.classList.remove("is-live");
+  }
+}
+
+async function syncHugsFromSupabase() {
+  if (!supabaseClient) return;
+
+  const { count, error } = await supabaseClient
+    .from("hugs")
+    .select("*", { count: "exact", head: true })
+    .eq("space_id", DEFAULT_SPACE_ID);
+
+  if (!error && count !== null) {
+    state.totalHugs = count;
+  }
+
+  const { data: latestHug } = await supabaseClient
+    .from("hugs")
+    .select("sender_name, created_at")
+    .eq("space_id", DEFAULT_SPACE_ID)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (latestHug && latestHug.length > 0) {
+    state.lastActionBy = latestHug[0].sender_name || "Partner";
+  }
+
+  renderStats();
+}
+
+async function syncNotesFromSupabase() {
+  if (!supabaseClient) return;
+
+  const { data: notes, error } = await supabaseClient
+    .from("love_notes")
+    .select("*")
+    .eq("space_id", DEFAULT_SPACE_ID)
+    .order("created_at", { ascending: false });
+
+  if (!error && notes && notes.length > 0) {
+    state.notes = notes.map((n) => ({
+      id: String(n.id),
+      title: n.title,
+      body: n.body,
+      savedAt: n.created_at,
+      author: n.author_name || "Mine",
+    }));
+    persistNotes();
+    renderNotes();
+  }
+}
+
+async function syncPlansFromSupabase() {
+  if (!supabaseClient) return;
+
+  const { data: plans, error } = await supabaseClient
+    .from("calendar_events")
+    .select("*")
+    .eq("space_id", DEFAULT_SPACE_ID);
+
+  if (!error && plans && plans.length > 0) {
+    state.plans = plans.map((p) => ({
+      id: String(p.id),
+      date: p.event_date,
+      title: p.title,
+      body: p.description || "",
+      createdAt: p.created_at,
+    }));
+    persistPlans();
+    renderRelationshipDates();
+    renderScheduler();
+  }
+}
+
+async function syncPhotosFromSupabase() {
+  if (!supabaseClient) return;
+
+  const { data: photos, error } = await supabaseClient
+    .from("photos")
+    .select("storage_path, caption")
+    .eq("space_id", DEFAULT_SPACE_ID)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (!error && photos && photos.length > 0) {
+    state.dailyPhotoDataUrl = photos[0].storage_path;
+    localStorage.setItem(STORAGE_KEYS.photo, state.dailyPhotoDataUrl);
+    renderDailyPhoto();
+  }
+}
+
+async function syncActivityFromSupabase() {
+  if (!supabaseClient) return;
+
+  const { data: logs, error } = await supabaseClient
+    .from("activity_logs")
+    .select("actor_name, details, created_at")
+    .eq("space_id", DEFAULT_SPACE_ID)
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (!error && logs && logs.length > 0) {
+    els.activityList.innerHTML = "";
+    logs.reverse().forEach((log) => {
+      addActivity(`${log.actor_name}: ${log.details}`);
+    });
+  }
+}
+
+function subscribeToRealtime() {
+  if (!supabaseClient) return;
+
+  // Realtime Hugs
+  supabaseClient
+    .channel("public:hugs")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "hugs", filter: `space_id=eq.${DEFAULT_SPACE_ID}` },
+      (payload) => {
+        const sender = payload.new.sender_name || "Partner";
+        state.totalHugs += 1;
+        state.lastActionBy = sender;
+        renderStats();
+
+        // Trigger remote heart burst if from partner
+        if (sender !== (state.activeTheme === "me" ? "Mine" : "His")) {
+          triggerHapticFeedback(els.heroCard);
+          createHeartParticles(els.heroCard);
+          addActivity(`${sender} sent a warm hug \u2665`);
+        }
+      }
+    )
+    .subscribe();
+
+  // Realtime Love Notes
+  supabaseClient
+    .channel("public:love_notes")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "love_notes", filter: `space_id=eq.${DEFAULT_SPACE_ID}` },
+      async () => {
+        await syncNotesFromSupabase();
+      }
+    )
+    .subscribe();
+
+  // Realtime Calendar Events
+  supabaseClient
+    .channel("public:calendar_events")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "calendar_events", filter: `space_id=eq.${DEFAULT_SPACE_ID}` },
+      async () => {
+        await syncPlansFromSupabase();
+      }
+    )
+    .subscribe();
+
+  // Realtime Activity Logs
+  supabaseClient
+    .channel("public:activity_logs")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "activity_logs", filter: `space_id=eq.${DEFAULT_SPACE_ID}` },
+      (payload) => {
+        const log = payload.new;
+        if (log.actor_name !== (state.activeTheme === "me" ? "Mine" : "His")) {
+          addActivity(`${log.actor_name}: ${log.details}`);
+        }
+      }
+    )
+    .subscribe();
+}
+
+// -------------------------------------------------------------
+// UI Navigation & Theming
+// -------------------------------------------------------------
+
 function setActiveView(viewName) {
   state.activeView = viewName;
 
@@ -164,6 +389,7 @@ function setActiveView(viewName) {
 
 function setTheme(theme) {
   state.activeTheme = theme;
+  localStorage.setItem(STORAGE_KEYS.theme, theme);
 
   document.body.classList.toggle("theme-me", theme === "me");
   document.body.classList.toggle("theme-his", theme === "his");
@@ -173,18 +399,41 @@ function setTheme(theme) {
   els.profileHisButton?.classList.toggle("is-preview-active", theme === "his");
 }
 
-async function handleHugInteraction(sourceElement, activityMessage) {
+function getActorName() {
+  return state.activeTheme === "me" ? "Mine" : "His";
+}
+
+// -------------------------------------------------------------
+// Virtual Hugs
+// -------------------------------------------------------------
+
+async function handleHugInteraction(sourceElement) {
   await triggerHapticFeedback(els.heroCard);
   createHeartParticles(sourceElement || getActiveContainer());
 
-  // Optimistic UI update. Replace this with POST /api/hugs/increment once
-  // Laravel is ready, then let the broadcast reconcile the final value.
-  applyRelationshipStats({
-    total_hugs: state.totalHugs + 1,
-    last_action_by: "Mine",
-  });
+  const actor = getActorName();
+  state.totalHugs += 1;
+  state.lastActionBy = actor;
+  renderStats();
+  addActivity("You sent a warm hug \u2665");
 
-  addActivity(activityMessage);
+  if (supabaseClient) {
+    try {
+      await supabaseClient.from("hugs").insert({
+        space_id: DEFAULT_SPACE_ID,
+        sender_name: actor,
+      });
+
+      await supabaseClient.from("activity_logs").insert({
+        space_id: DEFAULT_SPACE_ID,
+        actor_name: actor,
+        action_type: "hug_sent",
+        details: "Sent a warm hug \u2665",
+      });
+    } catch (e) {
+      console.error("Failed to persist hug to cloud:", e);
+    }
+  }
 }
 
 async function triggerHapticFeedback(fallbackTarget) {
@@ -193,13 +442,12 @@ async function triggerHapticFeedback(fallbackTarget) {
   if (isNative) {
     try {
       const haptics = await getCapacitorHaptics();
-
       if (haptics?.Haptics && haptics?.ImpactStyle) {
         await haptics.Haptics.impact({ style: haptics.ImpactStyle.Medium });
         return;
       }
     } catch (error) {
-      console.warn("Native haptics unavailable, using browser fallback.", error);
+      console.warn("Native haptics unavailable, using fallback.", error);
     }
   }
 
@@ -208,15 +456,10 @@ async function triggerHapticFeedback(fallbackTarget) {
 
 function isNativeCapacitorRuntime() {
   const capacitor = window.Capacitor;
-
-  if (!capacitor) {
-    return false;
-  }
-
+  if (!capacitor) return false;
   if (typeof capacitor.isNativePlatform === "function") {
     return capacitor.isNativePlatform();
   }
-
   return Boolean(capacitor.Plugins);
 }
 
@@ -227,13 +470,10 @@ async function getCapacitorHaptics() {
       ImpactStyle: { Medium: "MEDIUM" },
     };
   }
-
   return import("@capacitor/haptics");
 }
 
 function emulateHapticFeedback(target) {
-  console.log("\uD83D\uDCF3 [Haptic Emulation]: Phone would vibrate now!");
-
   const shakeTarget = target || getActiveContainer();
   shakeTarget.classList.remove("visual-shake");
 
@@ -241,13 +481,6 @@ function emulateHapticFeedback(target) {
     shakeTarget.classList.add("visual-shake");
     window.setTimeout(() => shakeTarget.classList.remove("visual-shake"), 430);
   });
-}
-
-function applyRelationshipStats(payload) {
-  state.totalHugs = Number(payload.total_hugs ?? state.totalHugs);
-  state.lastActionBy = payload.last_action_by ?? state.lastActionBy;
-  state.dailyGiftUnlockedAt = payload.daily_gift_unlocked_at ?? state.dailyGiftUnlockedAt;
-  renderStats();
 }
 
 function renderStats() {
@@ -262,22 +495,66 @@ function renderToday() {
   }).format(new Date());
 }
 
-function handlePhotoSelected(event) {
-  const [file] = event.target.files;
+// -------------------------------------------------------------
+// Photos & Memories
+// -------------------------------------------------------------
 
-  if (!file) {
-    return;
-  }
+async function handlePhotoSelected(event) {
+  const [file] = event.target.files;
+  if (!file) return;
 
   const reader = new FileReader();
-  reader.addEventListener("load", () => {
+  reader.addEventListener("load", async () => {
     state.dailyPhotoDataUrl = String(reader.result);
     localStorage.setItem(STORAGE_KEYS.photo, state.dailyPhotoDataUrl);
     renderDailyPhoto();
-    addActivity("Daily gift photo selected.");
-    // Backend later: POST FormData to /api/daily-gifts/photo and replace
-    // localStorage with the returned public asset URL.
+    els.photoStatus.textContent = "Uploading to Supabase cloud...";
+    addActivity("New memory photo selected.");
+
+    if (supabaseClient) {
+      try {
+        const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const filePath = `${DEFAULT_SPACE_ID}/${Date.now()}-${cleanName}`;
+
+        const { error: uploadError } = await supabaseClient.storage
+          .from("photos")
+          .upload(filePath, file, { upsert: true });
+
+        if (!uploadError) {
+          const { data: publicUrlData } = supabaseClient.storage
+            .from("photos")
+            .getPublicUrl(filePath);
+
+          const cloudUrl = publicUrlData.publicUrl;
+          state.dailyPhotoDataUrl = cloudUrl;
+          localStorage.setItem(STORAGE_KEYS.photo, cloudUrl);
+          renderDailyPhoto();
+
+          await supabaseClient.from("photos").insert({
+            space_id: DEFAULT_SPACE_ID,
+            storage_path: cloudUrl,
+            caption: file.name,
+            uploader_name: getActorName(),
+          });
+
+          await supabaseClient.from("activity_logs").insert({
+            space_id: DEFAULT_SPACE_ID,
+            actor_name: getActorName(),
+            action_type: "photo_shared",
+            details: "Added a new memory photo",
+          });
+
+          els.photoStatus.textContent = "Synced to Supabase cloud!";
+        } else {
+          console.error("Storage upload error:", uploadError);
+          els.photoStatus.textContent = "Saved locally (Cloud upload error).";
+        }
+      } catch (err) {
+        console.error("Failed to upload photo:", err);
+      }
+    }
   });
+
   reader.readAsDataURL(file);
 }
 
@@ -287,22 +564,26 @@ function renderDailyPhoto() {
   els.photoEmpty.hidden = hasPhoto;
   els.photoDeleteButton.hidden = !hasPhoto;
   els.photoStatus.textContent = hasPhoto
-    ? "Photo preview saved locally for PC testing."
-    : "Photo will preview here, then later upload to Laravel storage.";
+    ? "Synced with cloud memory scrapbook."
+    : "Tap to upload a memory photo to Supabase cloud.";
 
   if (hasPhoto) {
     els.photoPreview.src = state.dailyPhotoDataUrl;
   }
 }
 
-function deleteDailyPhoto() {
+async function deleteDailyPhoto() {
   state.dailyPhotoDataUrl = "";
   localStorage.removeItem(STORAGE_KEYS.photo);
   els.photoInput.value = "";
   els.photoPreview.removeAttribute("src");
   renderDailyPhoto();
-  addActivity("Daily gift photo cleared.");
+  addActivity("Memory photo cleared.");
 }
+
+// -------------------------------------------------------------
+// Love Notes
+// -------------------------------------------------------------
 
 function startNewNote() {
   state.editingNoteId = null;
@@ -313,7 +594,7 @@ function startNewNote() {
   openNoteModal();
 }
 
-function saveCurrentNote(event) {
+async function saveCurrentNote(event) {
   event.preventDefault();
 
   const title = els.noteTitleInput.value.trim() || "Untitled note";
@@ -325,21 +606,55 @@ function saveCurrentNote(event) {
   }
 
   const savedAt = new Date().toISOString();
+  const actor = getActorName();
 
   if (state.editingNoteId) {
     state.notes = state.notes.map((note) =>
-      note.id === state.editingNoteId ? { ...note, title, body, savedAt } : note,
+      note.id === state.editingNoteId ? { ...note, title, body, savedAt } : note
     );
     addActivity("Love note updated.");
+
+    if (supabaseClient && !state.editingNoteId.startsWith("local-")) {
+      await supabaseClient
+        .from("love_notes")
+        .update({ title, body, author_name: actor })
+        .eq("id", state.editingNoteId);
+    }
   } else {
-    state.editingNoteId = createId();
+    const localId = createId();
+    state.editingNoteId = localId;
     state.notes.unshift({
-      id: state.editingNoteId,
+      id: localId,
       title,
       body,
       savedAt,
+      author: actor,
     });
     addActivity("New love note saved.");
+
+    if (supabaseClient) {
+      const { data } = await supabaseClient
+        .from("love_notes")
+        .insert({
+          space_id: DEFAULT_SPACE_ID,
+          title,
+          body,
+          author_name: actor,
+        })
+        .select()
+        .single();
+
+      if (data) {
+        state.editingNoteId = String(data.id);
+      }
+
+      await supabaseClient.from("activity_logs").insert({
+        space_id: DEFAULT_SPACE_ID,
+        actor_name: actor,
+        action_type: "note_added",
+        details: `Left a note: "${title}"`,
+      });
+    }
   }
 
   persistNotes();
@@ -350,10 +665,7 @@ function saveCurrentNote(event) {
 
 function editNote(noteId) {
   const note = state.notes.find((item) => item.id === noteId);
-
-  if (!note) {
-    return;
-  }
+  if (!note) return;
 
   state.editingNoteId = note.id;
   els.noteModalTitle.textContent = "Edit Note";
@@ -363,17 +675,20 @@ function editNote(noteId) {
   openNoteModal();
 }
 
-function deleteCurrentNote() {
-  if (!state.editingNoteId) {
-    return;
-  }
+async function deleteCurrentNote() {
+  if (!state.editingNoteId) return;
 
-  state.notes = state.notes.filter((note) => note.id !== state.editingNoteId);
+  const noteToDelete = state.editingNoteId;
+  state.notes = state.notes.filter((note) => note.id !== noteToDelete);
   persistNotes();
   renderNotes();
   closeNoteModal();
   clearNoteForm();
   addActivity("Love note deleted.");
+
+  if (supabaseClient && !noteToDelete.startsWith("local-")) {
+    await supabaseClient.from("love_notes").delete().eq("id", noteToDelete);
+  }
 }
 
 function openNoteModal() {
@@ -435,8 +750,11 @@ function renderNotes() {
 
 function persistNotes() {
   localStorage.setItem(STORAGE_KEYS.notes, JSON.stringify(state.notes));
-  // Backend later: sync this array through /api/love-notes CRUD endpoints.
 }
+
+// -------------------------------------------------------------
+// Visual Effects & Activity Feed
+// -------------------------------------------------------------
 
 function createHeartParticles(sourceElement) {
   const rect = sourceElement.getBoundingClientRect();
@@ -468,10 +786,13 @@ function addActivity(message) {
   }
 }
 
-function setConnectionStatus(isLive) {
-  els.connectionStatus.textContent = isLive ? "Realtime live" : "Offline preview";
-  els.connectionStatus.classList.toggle("is-live", isLive);
+function getActiveContainer() {
+  return document.querySelector(".view.is-active") || els.appShell;
 }
+
+// -------------------------------------------------------------
+// Relationship Countdown & Calendar
+// -------------------------------------------------------------
 
 function renderRelationshipDates() {
   const now = new Date();
@@ -526,25 +847,11 @@ function renderCalendar(date) {
     dayCell.textContent = day.toString();
     dayCell.setAttribute("aria-label", getCalendarDayLabel(year, month, day, isMonthsary, isToday));
 
-    if (isToday) {
-      dayCell.classList.add("is-today");
-    }
-
-    if (isMonthsary) {
-      dayCell.classList.add("is-monthsary");
-    }
-
-    if (isStartDate) {
-      dayCell.classList.add("is-start-date");
-    }
-
-    if (hasPlan) {
-      dayCell.classList.add("has-plan");
-    }
-
-    if (isPast) {
-      dayCell.classList.add("is-past");
-    }
+    if (isToday) dayCell.classList.add("is-today");
+    if (isMonthsary) dayCell.classList.add("is-monthsary");
+    if (isStartDate) dayCell.classList.add("is-start-date");
+    if (hasPlan) dayCell.classList.add("has-plan");
+    if (isPast) dayCell.classList.add("is-past");
 
     els.calendarGrid.appendChild(dayCell);
   }
@@ -569,7 +876,7 @@ function shiftSchedulerMonth(direction) {
     state.schedulerMonth.getFullYear(),
     state.schedulerMonth.getMonth() + direction,
     1,
-    12,
+    12
   );
   renderScheduler();
 }
@@ -601,28 +908,17 @@ function renderScheduler() {
     dayCell.className = "calendar-day";
     dayCell.type = "button";
     dayCell.textContent = day.toString();
-    dayCell.setAttribute("aria-label", getCalendarDayLabel(year, month, day, day === 17, isSameDay(dayDate, new Date())));
+    dayCell.setAttribute(
+      "aria-label",
+      getCalendarDayLabel(year, month, day, day === 17, isSameDay(dayDate, new Date()))
+    );
     dayCell.addEventListener("click", () => selectPlanDate(dayDate));
 
-    if (isSameDay(dayDate, new Date())) {
-      dayCell.classList.add("is-today");
-    }
-
-    if (day === state.relationshipStart.getDate()) {
-      dayCell.classList.add("is-monthsary");
-    }
-
-    if (hasPlan) {
-      dayCell.classList.add("has-plan");
-    }
-
-    if (isPast) {
-      dayCell.classList.add("is-past", "is-disabled");
-    }
-
-    if (isSameDay(dayDate, state.selectedPlanDate)) {
-      dayCell.classList.add("is-selected");
-    }
+    if (isSameDay(dayDate, new Date())) dayCell.classList.add("is-today");
+    if (day === state.relationshipStart.getDate()) dayCell.classList.add("is-monthsary");
+    if (hasPlan) dayCell.classList.add("has-plan");
+    if (isPast) dayCell.classList.add("is-past", "is-disabled");
+    if (isSameDay(dayDate, state.selectedPlanDate)) dayCell.classList.add("is-selected");
 
     els.schedulerGrid.appendChild(dayCell);
   }
@@ -672,7 +968,7 @@ function renderPlansList(plans, locked) {
   });
 }
 
-function saveCurrentPlan(event) {
+async function saveCurrentPlan(event) {
   event.preventDefault();
 
   if (isPastDate(state.selectedPlanDate)) {
@@ -688,21 +984,56 @@ function saveCurrentPlan(event) {
     return;
   }
 
+  const dateStr = toDateKey(state.selectedPlanDate);
+
   if (state.editingPlanId) {
     state.plans = state.plans.map((plan) =>
-      plan.id === state.editingPlanId ? { ...plan, title, body, updatedAt: new Date().toISOString() } : plan,
+      plan.id === state.editingPlanId ? { ...plan, title, body, updatedAt: new Date().toISOString() } : plan
     );
     addActivity("Calendar plan updated.");
+
+    if (supabaseClient && !state.editingPlanId.startsWith("local-")) {
+      await supabaseClient
+        .from("calendar_events")
+        .update({ title, description: body })
+        .eq("id", state.editingPlanId);
+    }
   } else {
+    const localId = createId();
     state.plans.push({
-      id: createId(),
-      date: toDateKey(state.selectedPlanDate),
+      id: localId,
+      date: dateStr,
       title,
       body,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
     addActivity("Calendar plan added.");
+
+    if (supabaseClient) {
+      const { data } = await supabaseClient
+        .from("calendar_events")
+        .insert({
+          space_id: DEFAULT_SPACE_ID,
+          event_date: dateStr,
+          title,
+          description: body,
+          event_type: "plan",
+        })
+        .select()
+        .single();
+
+      if (data) {
+        state.plans = state.plans.map((p) => (p.id === localId ? { ...p, id: String(data.id) } : p));
+      }
+
+      await supabaseClient.from("activity_logs").insert({
+        space_id: DEFAULT_SPACE_ID,
+        actor_name: getActorName(),
+        action_type: "calendar_updated",
+        details: `Added plan for ${dateStr}: "${title}"`,
+      });
+    }
   }
 
   persistPlans();
@@ -713,10 +1044,7 @@ function saveCurrentPlan(event) {
 
 function editPlan(planId) {
   const plan = state.plans.find((item) => item.id === planId);
-
-  if (!plan) {
-    return;
-  }
+  if (!plan) return;
 
   state.editingPlanId = plan.id;
   els.planTitleInput.value = plan.title;
@@ -724,17 +1052,22 @@ function editPlan(planId) {
   renderSelectedPlanDate();
 }
 
-function deleteCurrentPlan() {
+async function deleteCurrentPlan() {
   if (!state.editingPlanId || isPastDate(state.selectedPlanDate)) {
     return;
   }
 
-  state.plans = state.plans.filter((plan) => plan.id !== state.editingPlanId);
+  const planToDelete = state.editingPlanId;
+  state.plans = state.plans.filter((plan) => plan.id !== planToDelete);
   persistPlans();
   clearPlanForm();
   renderRelationshipDates();
   renderScheduler();
   addActivity("Calendar plan deleted.");
+
+  if (supabaseClient && !planToDelete.startsWith("local-")) {
+    await supabaseClient.from("calendar_events").delete().eq("id", planToDelete);
+  }
 }
 
 function clearPlanForm() {
@@ -750,69 +1083,34 @@ function getPlansForDate(date) {
 
 function persistPlans() {
   localStorage.setItem(STORAGE_KEYS.plans, JSON.stringify(state.plans));
-  // Backend later: sync this array through /api/calendar-plans CRUD endpoints.
 }
 
-function setupRealtimePreviewListeners() {
-  // Laravel Echo / Reverb placeholder:
-  // window.Echo.channel("relationship.stats")
-  //   .listen(".RelationshipStatsUpdated", async (event) => {
-  //     applyRelationshipStats(event.stats);
-  //     await triggerHapticFeedback(els.heroCard);
-  //     addActivity(`${event.stats.last_action_by} sent an update.`);
-  //   });
-
-  window.addEventListener("cozy-space:stats-updated", async (event) => {
-    applyRelationshipStats(event.detail);
-    await triggerHapticFeedback(els.heroCard);
-    addActivity(`${event.detail.last_action_by || state.partnerName} updated Cozy Space.`);
-  });
-
-  window.setTimeout(() => {
-    setConnectionStatus(true);
-    window.dispatchEvent(
-      new CustomEvent("cozy-space:stats-updated", {
-        detail: {
-          total_hugs: state.totalHugs,
-          last_action_by: "Realtime preview",
-        },
-      }),
-    );
-  }, 900);
-}
-
-function getActiveContainer() {
-  return document.querySelector(".view.is-active") || els.appShell;
-}
+// -------------------------------------------------------------
+// Utilities & Formatting
+// -------------------------------------------------------------
 
 function getNextMonthlyDate(fromDate, dayOfMonth) {
   const candidate = new Date(fromDate.getFullYear(), fromDate.getMonth(), dayOfMonth, 12);
-
   if (isSameDay(fromDate, candidate) || fromDate < candidate) {
     return candidate;
   }
-
   return new Date(fromDate.getFullYear(), fromDate.getMonth() + 1, dayOfMonth, 12);
 }
 
 function getNextAnniversary(fromDate, startDate) {
   const candidate = new Date(fromDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 12);
-
   if (isSameDay(fromDate, candidate) || fromDate < candidate) {
     return candidate;
   }
-
   return new Date(fromDate.getFullYear() + 1, startDate.getMonth(), startDate.getDate(), 12);
 }
 
 function getCompletedMonths(fromDate, startDate) {
   let months = (fromDate.getFullYear() - startDate.getFullYear()) * 12;
   months += fromDate.getMonth() - startDate.getMonth();
-
   if (fromDate.getDate() < startDate.getDate()) {
     months -= 1;
   }
-
   return Math.max(0, months);
 }
 
@@ -832,25 +1130,14 @@ function getMonthsaryLabel(date) {
 function getCalendarDayLabel(year, month, day, isMonthsary, isToday) {
   const dateLabel = formatShortDate(new Date(year, month, day, 12));
   const details = [];
-
-  if (isToday) {
-    details.push("today");
-  }
-
-  if (isMonthsary) {
-    details.push("monthsary date");
-  }
-
+  if (isToday) details.push("today");
+  if (isMonthsary) details.push("monthsary date");
   return details.length ? `${dateLabel}, ${details.join(", ")}` : dateLabel;
 }
 
 function getOrdinalSuffix(value) {
   const mod100 = value % 100;
-
-  if (mod100 >= 11 && mod100 <= 13) {
-    return "th";
-  }
-
+  if (mod100 >= 11 && mod100 <= 13) return "th";
   switch (value % 10) {
     case 1:
       return "st";
@@ -924,7 +1211,6 @@ function createId() {
   if (window.crypto?.randomUUID) {
     return window.crypto.randomUUID();
   }
-
   return `${Date.now()}-${randomBetween(1000, 9999)}`;
 }
 

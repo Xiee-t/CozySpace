@@ -12,7 +12,7 @@
       <section class="view is-active" id="dashboardView" data-view="dashboard" aria-labelledby="dashboardTitle">
         <article class="hero-card visual-container" id="heroCard">
           <div class="status-row">
-            <span class="status-pill" id="connectionStatus">Offline preview</span>
+            <span class="status-pill" id="connectionStatus">Connecting...</span>
             <span class="date-chip" id="todayLabel">Today</span>
           </div>
 
@@ -120,7 +120,7 @@
               <span class="photo-empty" id="photoEmpty">Tap to add today's photo</span>
               <img class="photo-preview" id="photoPreview" alt="Uploaded daily gift preview" hidden />
             </label>
-            <p class="panel-note" id="photoStatus">Preview now, upload to Laravel later.</p>
+            <p class="panel-note" id="photoStatus">Saved and synced via Supabase cloud storage.</p>
           </article>
 
           <article class="panel notes-compact-panel">
@@ -218,6 +218,7 @@
     </nav>
 
     <div class="particle-layer" id="particleLayer" aria-hidden="true"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
   </body>
 </html>
