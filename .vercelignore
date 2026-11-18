@@ -1,0 +1,15 @@
+vendor
+storage
+tests
+bootstrap
+app
+config
+database
+routes
+composer.json
+composer.lock
+artisan
+phpunit.xml
+.env
+.env.*
+node_modules
