@@ -9,19 +9,13 @@ if (fs.existsSync(distDir)) {
 }
 fs.mkdirSync(distDir, { recursive: true });
 
-// Copy public directory if exists
+// Copy public directory if exists (favicons, robots, assets)
 const publicDir = path.resolve('public');
 if (fs.existsSync(publicDir)) {
   fs.cpSync(publicDir, distDir, { recursive: true });
 }
 
-// Remove legacy PHP entry from dist if copied from public
-const phpEntry = path.join(distDir, 'index.php');
-if (fs.existsSync(phpEntry)) {
-  fs.rmSync(phpEntry);
-}
-
-// Files to copy directly to dist (overwrites with latest root files)
+// Frontend files to copy directly to dist
 const filesToCopy = ['index.html', 'style.css', 'app.js', 'supabase.js'];
 for (const file of filesToCopy) {
   if (fs.existsSync(file)) {
@@ -29,4 +23,4 @@ for (const file of filesToCopy) {
   }
 }
 
-console.log('✓ CozySpace frontend static build created in dist/');
+console.log('✓ CozySpace 100% JavaScript static build created in dist/');
