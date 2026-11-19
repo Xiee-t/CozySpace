@@ -1,10 +1,74 @@
 "use strict";
 
 const SUPABASE_URL = "https://fiauyvcbdhgijxwvhvaz.supabase.co";
-const SUPABASE_KEY = "sb_publishable_90avx2PkIt7R5SoD71NwcA_MIx25IMy";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpYXV5dmNiZGhnaWp4d3ZodmF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwMjA1MTUsImV4cCI6MjExMDU5NjUxNX0.A6_d8ApufrLW8A28oPKR6v1M0AAjVStyP5eMxY-pC3I";
 const DEFAULT_SPACE_ID = "00000000-0000-0000-0000-000000000001";
 
 let supabaseClient = null;
+
+async function ensureSupabaseClient() {
+  if (supabaseClient) return supabaseClient;
+
+  // 1. If window.supabase exists, instantiate immediately
+  if (window.supabase && typeof window.supabase.createClient === "function") {
+    try {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+        },
+      });
+      return supabaseClient;
+    } catch (e) {
+      console.error("Error creating Supabase client:", e);
+    }
+  }
+
+  // 2. Wait up to 3 seconds in case script is still compiling
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 100));
+    if (window.supabase && typeof window.supabase.createClient === "function") {
+      try {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+          },
+        });
+        return supabaseClient;
+      } catch (e) {
+        console.error("Error creating Supabase client:", e);
+      }
+    }
+  }
+
+  // 3. Fallback: dynamically inject script if needed
+  if (!window.supabase) {
+    await new Promise((resolve) => {
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+      s.onload = () => resolve();
+      s.onerror = () => resolve();
+      document.head.appendChild(s);
+    });
+    if (window.supabase && typeof window.supabase.createClient === "function") {
+      try {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+          },
+        });
+        return supabaseClient;
+      } catch (e) {}
+    }
+  }
+
+  return supabaseClient;
+}
 
 const STORAGE_KEYS = {
   notes: "cozy-space-love-notes",
@@ -1013,8 +1077,9 @@ function showJoinStatus(message, statusClass) {
 // -------------------------------------------------------------
 
 async function handleOAuthFlow(provider, isSignUp = false) {
-  if (!supabaseClient) {
-    showAuthError("Database connecting, please retry in a moment.");
+  const client = await ensureSupabaseClient();
+  if (!client) {
+    showAuthError("Database connection is initializing. Please verify your internet or reload the page.");
     return;
   }
 
@@ -1033,14 +1098,15 @@ async function handleOAuthFlow(provider, isSignUp = false) {
       const errJson = await precheck.json();
       if (errJson.msg && errJson.msg.includes("provider is not enabled")) {
         showAuthError(
-          `${providerName} authentication is not enabled yet in your Supabase project (Auth > Providers > ${providerName}).`
+          `${providerName} is not enabled in Supabase yet. Please use Email & Password below.`
         );
         if (els.oauthWarningNotice) {
           els.oauthWarningNotice.hidden = false;
           if (els.oauthWarningText) {
-            els.oauthWarningText.innerHTML = `<strong>${providerName} is not enabled yet in your Supabase project.</strong><br>In your open Supabase dashboard tab, go to <em>Authentication &gt; Providers &gt; ${providerName}</em>, toggle to Enabled and enter credentials, or use <strong>Email &amp; Password</strong> below.`;
+            els.oauthWarningText.innerHTML = `<strong>${providerName} OAuth is not enabled in your Supabase project yet.</strong><br>To enable it, open your Supabase Dashboard &gt; <em>Authentication &gt; Providers &gt; ${providerName}</em> and enter OAuth credentials. In the meantime, you can create or sign in with an <strong>Email &amp; Password</strong> below.`;
           }
         }
+        setAuthMethod("email");
         return;
       }
     }
@@ -1087,8 +1153,9 @@ function handleEmailFormSubmit(event) {
 
 async function handleEmailSignIn(event) {
   event?.preventDefault();
-  if (!supabaseClient) {
-    showAuthError("Database connecting, please retry in a moment.");
+  const client = await ensureSupabaseClient();
+  if (!client) {
+    showAuthError("Database connection is initializing. Please verify your internet or reload the page.");
     return;
   }
 
@@ -1120,8 +1187,9 @@ async function handleEmailSignIn(event) {
 
 async function handleEmailSignUp(event) {
   event?.preventDefault();
-  if (!supabaseClient) {
-    showAuthError("Database connecting, please retry in a moment.");
+  const client = await ensureSupabaseClient();
+  if (!client) {
+    showAuthError("Database connection is initializing. Please verify your internet or reload the page.");
     return;
   }
 
@@ -1553,17 +1621,17 @@ async function checkUrlForInvite() {
 // -------------------------------------------------------------
 
 async function initSupabase() {
-  if (!window.supabase) {
-    console.warn("Supabase SDK not loaded yet, using offline fallback.");
+  const client = await ensureSupabaseClient();
+  if (!client) {
+    console.warn("Supabase SDK not loaded yet, will retry in 2 seconds...");
     setConnectionStatus(false);
+    setTimeout(initSupabase, 2000);
     return;
   }
 
   try {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
     // Check existing auth session
-    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const { data: sessionData } = await client.auth.getSession();
     if (sessionData?.session?.user) {
       await syncAuthUser(sessionData.session.user);
       if (els.bottomTabs) els.bottomTabs.hidden = false;
@@ -1574,7 +1642,7 @@ async function initSupabase() {
     }
 
     // Listen for auth changes
-    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    client.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         await syncAuthUser(session.user);
         if (els.bottomTabs) els.bottomTabs.hidden = false;
