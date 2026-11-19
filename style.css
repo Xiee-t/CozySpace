@@ -386,25 +386,55 @@ button {
 }
 
 .view.is-active {
-  display: grid;
-}
-
-/* Pre-paint auth gate: immediately show dashboard and bottom tabs if authenticated */
-html.is-authenticated #signinView {
-  display: none;
-}
-html.is-authenticated #dashboardView {
-  display: grid;
-}
-html.is-authenticated #bottomTabs[hidden] {
   display: grid !important;
 }
 
-/* Active tab view precedence */
-html.is-authenticated .view.is-active {
+/* Pre-paint auth view gate: zero flash, deterministic state */
+html:not(.is-authenticated) #bottomTabs {
+  display: none !important;
+}
+html:not(.is-authenticated) #signinView {
   display: grid !important;
 }
-html.is-authenticated .view:not(.is-active) {
+html:not(.is-authenticated) #dashboardView,
+html:not(.is-authenticated) #settingsView {
+  display: none !important;
+}
+
+html.is-authenticated #bottomTabs {
+  display: grid !important;
+}
+
+/* When authenticated: by default show dashboard unless another view is explicitly active */
+html.is-authenticated:not(.view-signin-active):not(.view-settings-active) #signinView {
+  display: none !important;
+}
+html.is-authenticated:not(.view-signin-active):not(.view-settings-active) #dashboardView {
+  display: grid !important;
+}
+
+/* Specific view overrides when navigating tabs */
+html.view-signin-active #signinView {
+  display: grid !important;
+}
+html.view-signin-active #dashboardView,
+html.view-signin-active #settingsView {
+  display: none !important;
+}
+
+html.view-dashboard-active #dashboardView {
+  display: grid !important;
+}
+html.view-dashboard-active #signinView,
+html.view-dashboard-active #settingsView {
+  display: none !important;
+}
+
+html.view-settings-active #settingsView {
+  display: grid !important;
+}
+html.view-settings-active #signinView,
+html.view-settings-active #dashboardView {
   display: none !important;
 }
 

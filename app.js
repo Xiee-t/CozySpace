@@ -4,6 +4,18 @@ const SUPABASE_URL = "https://fiauyvcbdhgijxwvhvaz.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpYXV5dmNiZGhnaWp4d3ZodmF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwMjA1MTUsImV4cCI6MjExMDU5NjUxNX0.A6_d8ApufrLW8A28oPKR6v1M0AAjVStyP5eMxY-pC3I";
 const DEFAULT_SPACE_ID = "00000000-0000-0000-0000-000000000001";
 
+const IS_OAUTH_RETURN =
+  typeof window !== "undefined" &&
+  (window.location.hash.includes("access_token") ||
+   window.location.hash.includes("refresh_token") ||
+   window.location.search.includes("code="));
+
+const HAS_SAVED_AUTH =
+  typeof localStorage !== "undefined" &&
+  Object.keys(localStorage).some(
+    (k) => k.startsWith("sb-") && k.endsWith("-auth-token")
+  );
+
 let supabaseClient = null;
 
 async function ensureSupabaseClient() {
@@ -300,22 +312,12 @@ async function init() {
   window.setInterval(renderRelationshipDates, 60 * 1000);
 
   // Check if user is returning from OAuth redirect or has an existing stored session
-  const hasSavedAuthToken = Object.keys(localStorage).some(
-    (k) => k.startsWith("sb-") && k.endsWith("-auth-token")
-  );
-  const isOAuthReturn =
-    window.location.hash.includes("access_token") ||
-    window.location.hash.includes("refresh_token") ||
-    window.location.search.includes("code=");
-
-  if (hasSavedAuthToken || isOAuthReturn) {
+  if (HAS_SAVED_AUTH || IS_OAUTH_RETURN) {
     document.documentElement.classList.add("is-authenticated");
-    if (els.bottomTabs) els.bottomTabs.hidden = false;
     setActiveView("dashboard");
   } else {
     // Visitor is not logged in: show Sign In page first with tabs hidden
     document.documentElement.classList.remove("is-authenticated");
-    if (els.bottomTabs) els.bottomTabs.hidden = true;
     setActiveView("signin");
   }
 
@@ -1244,16 +1246,10 @@ async function handleEmailSignUp(event) {
     showAuthStatus("Account created & signed in.", "is-success");
     handleUserAuthenticated(data.user);
   } else if (data?.user) {
-    const { data: signInData, error: signInErr } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (!signInErr && signInData?.user) {
-      showAuthStatus("Account created & signed in.", "is-success");
-      handleUserAuthenticated(signInData.user);
-    } else {
-      showAuthStatus("Account created. Please click Sign In with your credentials.", "is-success");
-    }
+    showAuthStatus("Account created & signed in.", "is-success");
+    handleUserAuthenticated(data.user);
+    // Background credential verification if needed
+    supabaseClient.auth.signInWithPassword({ email, password }).catch(() => {});
   }
 }
 
@@ -1350,11 +1346,7 @@ async function handleSignOut() {
   state.profile = null;
   state.space = null;
   state.partnerName = "Partner";
-  if (els.bottomTabs) els.bottomTabs.hidden = true;
   setActiveView("signin");
-  document.getElementById("signinView")?.classList.add("is-active");
-  document.getElementById("dashboardView")?.classList.remove("is-active");
-  document.getElementById("settingsView")?.classList.remove("is-active");
   updateUserBadge();
   updatePartnerBadge();
   updateAuthTabUi();
@@ -1368,12 +1360,8 @@ function handleUserAuthenticated(user) {
   state.user = user;
   document.documentElement.classList.add("is-authenticated");
 
-  // 1. Immediately reveal bottom navigation tabs and switch to Main page
-  if (els.bottomTabs) els.bottomTabs.hidden = false;
+  // 1. Immediately switch to Main dashboard view
   setActiveView("dashboard");
-  document.getElementById("signinView")?.classList.remove("is-active");
-  document.getElementById("dashboardView")?.classList.add("is-active");
-  document.getElementById("settingsView")?.classList.remove("is-active");
 
   // 2. Remove OAuth tokens, refresh token, or code query params from URL
   if (
@@ -1648,10 +1636,10 @@ async function checkUrlForInvite() {
     els.manualInviteCodeInput.value = cleanCode;
   }
 
-  if (!state.user) {
+  if (!state.user && !IS_OAUTH_RETURN && !HAS_SAVED_AUTH) {
     setActiveView("signin");
     showAuthStatus(`Partner invite detected (${cleanCode}). Sign in or create an account to connect!`, "is-info");
-  } else {
+  } else if (state.user) {
     setActiveView("settings");
   }
 
@@ -1696,11 +1684,6 @@ async function initSupabase() {
   }
 
   try {
-    const isOAuthReturn =
-      window.location.hash.includes("access_token") ||
-      window.location.hash.includes("refresh_token") ||
-      window.location.search.includes("code=");
-
     // 1. Listen for auth changes first (captures SIGNED_IN event from OAuth hash)
     client.auth.onAuthStateChange(async (event, session) => {
       console.log("[Auth State]", event, session?.user?.email);
@@ -1708,19 +1691,7 @@ async function initSupabase() {
       if (session?.user) {
         handleUserAuthenticated(session.user);
       } else if (event === "SIGNED_OUT") {
-        document.documentElement.classList.remove("is-authenticated");
-        state.user = null;
-        state.profile = null;
-        state.space = null;
-        state.partnerName = "Partner";
-        if (els.bottomTabs) els.bottomTabs.hidden = true;
-        setActiveView("signin");
-        document.getElementById("signinView")?.classList.add("is-active");
-        document.getElementById("dashboardView")?.classList.remove("is-active");
-        document.getElementById("settingsView")?.classList.remove("is-active");
-        updateUserBadge();
-        updatePartnerBadge();
-        updateAuthTabUi();
+        handleSignOut();
       }
     });
 
@@ -1728,8 +1699,7 @@ async function initSupabase() {
     const { data: sessionData } = await client.auth.getSession();
     if (sessionData?.session?.user) {
       handleUserAuthenticated(sessionData.session.user);
-    } else if (!isOAuthReturn && !state.user && !document.documentElement.classList.contains("is-authenticated")) {
-      if (els.bottomTabs) els.bottomTabs.hidden = true;
+    } else if (!IS_OAUTH_RETURN && !HAS_SAVED_AUTH && !state.user && !document.documentElement.classList.contains("is-authenticated")) {
       setActiveView("signin");
     }
 
@@ -1944,15 +1914,42 @@ function subscribeToRealtime() {
 function setActiveView(viewName) {
   state.activeView = viewName;
 
-  els.views.forEach((view) => {
-    view.classList.toggle("is-active", view.dataset.view === viewName);
+  // Toggle view state classes on documentElement for precise CSS styling
+  document.documentElement.classList.toggle("view-signin-active", viewName === "signin");
+  document.documentElement.classList.toggle("view-settings-active", viewName === "settings");
+  document.documentElement.classList.toggle("view-dashboard-active", viewName === "dashboard");
+
+  const views = [
+    { el: document.getElementById("signinView"), name: "signin" },
+    { el: document.getElementById("dashboardView"), name: "dashboard" },
+    { el: document.getElementById("settingsView"), name: "settings" },
+  ];
+
+  views.forEach(({ el, name }) => {
+    if (!el) return;
+    const match = name === viewName;
+    el.classList.toggle("is-active", match);
+    el.style.display = match ? "grid" : "none";
   });
 
-  els.tabButtons.forEach((button) => {
+  els.tabButtons?.forEach((button) => {
     const isActive = button.dataset.targetView === viewName;
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-selected", String(isActive));
   });
+
+  const bottomTabs = document.querySelector("#bottomTabs");
+  if (bottomTabs) {
+    const showTabs = !!state.user || document.documentElement.classList.contains("is-authenticated");
+    bottomTabs.hidden = !showTabs;
+    if (showTabs) {
+      bottomTabs.removeAttribute("hidden");
+      bottomTabs.style.display = "grid";
+    } else {
+      bottomTabs.setAttribute("hidden", "");
+      bottomTabs.style.display = "none";
+    }
+  }
 
   if (viewName === "signin") {
     updateAuthTabUi();
