@@ -389,6 +389,25 @@ button {
   display: grid;
 }
 
+/* Pre-paint auth gate: immediately show dashboard and bottom tabs if authenticated */
+html.is-authenticated #signinView {
+  display: none;
+}
+html.is-authenticated #dashboardView {
+  display: grid;
+}
+html.is-authenticated #bottomTabs[hidden] {
+  display: grid !important;
+}
+
+/* Active tab view precedence */
+html.is-authenticated .view.is-active {
+  display: grid !important;
+}
+html.is-authenticated .view:not(.is-active) {
+  display: none !important;
+}
+
 .hero-card,
 .panel,
 .hug-card {

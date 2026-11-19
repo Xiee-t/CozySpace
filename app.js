@@ -309,10 +309,12 @@ async function init() {
     window.location.search.includes("code=");
 
   if (hasSavedAuthToken || isOAuthReturn) {
+    document.documentElement.classList.add("is-authenticated");
     if (els.bottomTabs) els.bottomTabs.hidden = false;
     setActiveView("dashboard");
   } else {
     // Visitor is not logged in: show Sign In page first with tabs hidden
+    document.documentElement.classList.remove("is-authenticated");
     if (els.bottomTabs) els.bottomTabs.hidden = true;
     setActiveView("signin");
   }
@@ -1335,15 +1337,24 @@ async function handleAcceptJoinCurrentSpace() {
 }
 
 async function handleSignOut() {
-  if (!supabaseClient) return;
+  document.documentElement.classList.remove("is-authenticated");
+  if (supabaseClient) {
+    try {
+      await supabaseClient.auth.signOut();
+    } catch (e) {
+      console.warn("Sign out error:", e);
+    }
+  }
 
-  await supabaseClient.auth.signOut();
   state.user = null;
   state.profile = null;
   state.space = null;
   state.partnerName = "Partner";
   if (els.bottomTabs) els.bottomTabs.hidden = true;
   setActiveView("signin");
+  document.getElementById("signinView")?.classList.add("is-active");
+  document.getElementById("dashboardView")?.classList.remove("is-active");
+  document.getElementById("settingsView")?.classList.remove("is-active");
   updateUserBadge();
   updatePartnerBadge();
   updateAuthTabUi();
@@ -1355,10 +1366,14 @@ let isSyncingUser = false;
 function handleUserAuthenticated(user) {
   if (!user) return;
   state.user = user;
+  document.documentElement.classList.add("is-authenticated");
 
   // 1. Immediately reveal bottom navigation tabs and switch to Main page
   if (els.bottomTabs) els.bottomTabs.hidden = false;
   setActiveView("dashboard");
+  document.getElementById("signinView")?.classList.remove("is-active");
+  document.getElementById("dashboardView")?.classList.add("is-active");
+  document.getElementById("settingsView")?.classList.remove("is-active");
 
   // 2. Remove OAuth tokens, refresh token, or code query params from URL
   if (
@@ -1693,12 +1708,16 @@ async function initSupabase() {
       if (session?.user) {
         handleUserAuthenticated(session.user);
       } else if (event === "SIGNED_OUT") {
+        document.documentElement.classList.remove("is-authenticated");
         state.user = null;
         state.profile = null;
         state.space = null;
         state.partnerName = "Partner";
         if (els.bottomTabs) els.bottomTabs.hidden = true;
         setActiveView("signin");
+        document.getElementById("signinView")?.classList.add("is-active");
+        document.getElementById("dashboardView")?.classList.remove("is-active");
+        document.getElementById("settingsView")?.classList.remove("is-active");
         updateUserBadge();
         updatePartnerBadge();
         updateAuthTabUi();
@@ -1709,7 +1728,7 @@ async function initSupabase() {
     const { data: sessionData } = await client.auth.getSession();
     if (sessionData?.session?.user) {
       handleUserAuthenticated(sessionData.session.user);
-    } else if (!isOAuthReturn && !state.user) {
+    } else if (!isOAuthReturn && !state.user && !document.documentElement.classList.contains("is-authenticated")) {
       if (els.bottomTabs) els.bottomTabs.hidden = true;
       setActiveView("signin");
     }
