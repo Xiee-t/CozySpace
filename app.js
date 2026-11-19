@@ -28,7 +28,7 @@ const state = {
   partnerName: "Partner",
   gender: savedGender,
   hapticsEnabled: savedHaptics,
-  activeTheme: savedGender === "male" ? "male" : "female",
+  activeTheme: savedGender,
   relationshipStart: new Date(2026, 4, 17, 12),
   notes: [],
   plans: [],
@@ -212,7 +212,7 @@ async function init() {
   renderDailyPhoto();
   renderNotes();
   wireUiEvents();
-  setGender(state.gender);
+  setPalette(state.gender);
   updateHapticsUi();
   updatePartnerBadge();
   window.setInterval(renderRelationshipDates, 60 * 1000);
@@ -248,9 +248,14 @@ function wireUiEvents() {
   els.openInviteModalButton?.addEventListener("click", () => setActiveView("settings"));
   els.openSettingsModalButton?.addEventListener("click", () => setActiveView("settings"));
 
-  // Sign In Tab & Gender Theme Events
-  els.genderFemaleButton?.addEventListener("click", () => setGender("female"));
-  els.genderMaleButton?.addEventListener("click", () => setGender("male"));
+  // Sign In Tab & Theme Palette Events
+  els.genderFemaleButton?.addEventListener("click", () => setPalette("female"));
+  els.genderMaleButton?.addEventListener("click", () => setPalette("male"));
+
+  // Wire all extended palette cards by data-palette-id attribute
+  document.querySelectorAll("[data-palette-id]").forEach((btn) => {
+    btn.addEventListener("click", () => setPalette(btn.dataset.paletteId));
+  });
 
   // Auth Mode (Sign In vs Create Account)
   els.authModeSignInTab?.addEventListener("click", () => setAuthMode("signin"));
@@ -337,79 +342,123 @@ function wireUiEvents() {
 }
 
 // -------------------------------------------------------------
-// Gender & Theme Management
+// Theme Palette Data & Management
 // -------------------------------------------------------------
 
-function setGender(gender) {
-  state.gender = gender;
-  localStorage.setItem(STORAGE_KEYS.gender, gender);
+const PALETTE_THEMES = [
+  { id: "female",         name: "Female Aesthetic",             bg: "#2e1e1f", primary: "#e30b5c",   dark: true  },
+  { id: "male",           name: "Male Aesthetic",               bg: "#35393C", primary: "#A4D8FF",   dark: true  },
+  { id: "burnt-peach",    name: "Eggshell + Burnt Peach",       bg: "#F4F1DE", primary: "#E07A5F",   dark: false },
+  { id: "burgundy",       name: "Antique White + Burgundy",     bg: "#F7E6D2", primary: "#90202C",   dark: false },
+  { id: "icy-blue",       name: "Icy Blue + Blue Slate",        bg: "#B3D1ED", primary: "#516171",   dark: false },
+  { id: "powder-petal",   name: "Powder Petal + Twilight",      bg: "#F9DEC9", primary: "#3A405A",   dark: false },
+  { id: "berry-blush",    name: "Berry Blush + Petal Frost",    bg: "#974472", primary: "#FEDDE8",   dark: true  },
+  { id: "shadow-grey",    name: "Shadow Grey + Sandy Clay",     bg: "#272727", primary: "#D4AA7D",   dark: true  },
+  { id: "hunter-green",   name: "Hunter Green + Sand Dune",     bg: "#3E5F44", primary: "#DDD6B9",   dark: true  },
+  { id: "blue-grey",      name: "Blue Grey + Morning Butter",   bg: "#7298C7", primary: "#F3D98F",   dark: true  },
+  { id: "thistle",        name: "Thistle + Deep Mocha",         bg: "#D6C8DF", primary: "#332927",   dark: false },
+  { id: "parchment",      name: "Parchment + Rich Mahogany",    bg: "#EEEDE9", primary: "#371B17",   dark: false },
+  { id: "cherry-blossom", name: "Cherry Blossom + Deep Twilight", bg: "#F9A8BB", primary: "#1A1265", dark: false },
+  { id: "lavender-blush", name: "Lavender Blush + Blush",       bg: "#FFE6ED", primary: "#CF7486",   dark: false },
+  { id: "espresso",       name: "Espresso + Peony",             bg: "#3E2723", primary: "#F4C9D6",   dark: true  },
+  { id: "soft-linen",     name: "Soft Linen + Cherry Blossom",  bg: "#F5F1E6", primary: "#F9A8BB",   dark: false },
+];
 
-  const isFemale = gender === "female";
-  els.genderFemaleButton?.classList.toggle("is-selected", isFemale);
-  els.genderFemaleButton?.setAttribute("aria-pressed", String(isFemale));
-  els.genderMaleButton?.classList.toggle("is-selected", !isFemale);
-  els.genderMaleButton?.setAttribute("aria-pressed", String(!isFemale));
+// All theme CSS body classes to remove before applying a new one
+const ALL_THEME_CLASSES = [
+  "theme-female", "theme-me", "theme-male", "theme-his",
+  "theme-burnt-peach", "theme-burgundy", "theme-icy-blue", "theme-powder-petal",
+  "theme-berry-blush", "theme-shadow-grey", "theme-hunter-green", "theme-blue-grey",
+  "theme-thistle", "theme-parchment", "theme-cherry-blossom", "theme-lavender-blush",
+  "theme-espresso", "theme-soft-linen",
+];
 
+function setPalette(paletteId) {
+  const palette = PALETTE_THEMES.find((p) => p.id === paletteId) || PALETTE_THEMES[0];
+  state.gender = paletteId;
+  state.activeTheme = paletteId;
+  localStorage.setItem(STORAGE_KEYS.gender, paletteId);
+  localStorage.setItem(STORAGE_KEYS.theme, paletteId);
+
+  // Update all theme card selection states
+  document.querySelectorAll("[data-palette-id]").forEach((btn) => {
+    const isActive = btn.dataset.paletteId === paletteId;
+    btn.classList.toggle("is-selected", isActive);
+    btn.setAttribute("aria-pressed", String(isActive));
+  });
+
+  // Also keep legacy female/male button IDs in sync
+  const isFemale = paletteId === "female";
+  const isMale = paletteId === "male";
   els.settingsThemeFemaleButton?.classList.toggle("is-selected", isFemale);
-  els.settingsThemeMaleButton?.classList.toggle("is-selected", !isFemale);
+  els.settingsThemeMaleButton?.classList.toggle("is-selected", isMale);
 
-  setTheme(isFemale ? "female" : "male");
+  applyPaletteToBody(palette);
   updateUserBadge();
 
   if (supabaseClient && state.user) {
     supabaseClient
       .from("profiles")
       .update({
-        gender: gender,
-        theme_color: isFemale ? "#e30b5c" : "#A4D8FF",
+        gender: paletteId,
+        theme_color: palette.primary,
         updated_at: new Date().toISOString(),
       })
       .eq("id", state.user.id)
       .then(({ error }) => {
-        if (error) console.error("Error saving gender to backend:", error);
+        if (error) console.error("Error saving theme palette to backend:", error);
       });
   }
 }
 
+function setGender(gender) {
+  setPalette(gender);
+}
+
 function setJoinGender(gender) {
-  setGender(gender);
-  const isFemale = gender === "female";
-  els.joinGenderFemaleButton?.classList.toggle("is-selected", isFemale);
-  els.joinGenderMaleButton?.classList.toggle("is-selected", !isFemale);
+  setPalette(gender);
+  els.joinGenderFemaleButton?.classList.toggle("is-selected", gender === "female");
+  els.joinGenderMaleButton?.classList.toggle("is-selected", gender === "male");
+}
+
+function applyPaletteToBody(palette) {
+  // Remove all existing theme classes
+  document.body.classList.remove(...ALL_THEME_CLASSES);
+
+  // Apply the correct class(es)
+  if (palette.id === "female") {
+    document.body.classList.add("theme-female", "theme-me");
+  } else if (palette.id === "male") {
+    document.body.classList.add("theme-male", "theme-his");
+  } else {
+    document.body.classList.add("theme-" + palette.id);
+  }
+
+  // Update swatch if present
+  if (els.userThemeSwatch) {
+    els.userThemeSwatch.style.background =
+      "linear-gradient(135deg, " + palette.bg + " 0%, " + palette.primary + " 100%)";
+    els.userThemeSwatch.className = "profile-swatch";
+    els.userThemeSwatch.style.opacity = "1";
+  }
 }
 
 function setTheme(theme) {
-  const isFemale = theme === "female" || theme === "me";
-  state.activeTheme = isFemale ? "female" : "male";
-  localStorage.setItem(STORAGE_KEYS.theme, state.activeTheme);
-
-  document.body.classList.toggle("theme-female", isFemale);
-  document.body.classList.toggle("theme-me", isFemale);
-  document.body.classList.toggle("theme-male", !isFemale);
-  document.body.classList.toggle("theme-his", !isFemale);
-
-  if (els.userThemeSwatch) {
-    els.userThemeSwatch.className = isFemale
-      ? "profile-swatch profile-swatch--me"
-      : "profile-swatch profile-swatch--his-preview";
-    els.userThemeSwatch.style.background = isFemale
-      ? "linear-gradient(135deg, #2e1e1f 0%, #e30b5c 100%)"
-      : "linear-gradient(135deg, #35393C 0%, #A4D8FF 100%)";
-    els.userThemeSwatch.style.opacity = "1";
-  }
+  setPalette(theme);
 }
 
 function updateUserBadge() {
   if (!els.authButtonLabel) return;
 
-  const isFemale = state.gender === "female";
+  const currentPaletteId = state.gender || "female";
+  const palette = PALETTE_THEMES.find((p) => p.id === currentPaletteId) || PALETTE_THEMES[0];
 
   if (state.user) {
     const name = state.profile?.display_name || state.user.email?.split("@")[0] || "User";
-    els.authButtonLabel.textContent = `${name} (${isFemale ? "Female" : "Male"})`;
+    els.authButtonLabel.textContent = `${name}`;
     if (els.settingsSignOutButton) els.settingsSignOutButton.hidden = false;
   } else {
-    els.authButtonLabel.textContent = `${isFemale ? "Female" : "Male"} Sign In`;
+    els.authButtonLabel.textContent = "Sign In";
     if (els.settingsSignOutButton) els.settingsSignOutButton.hidden = true;
   }
   updateAuthTabUi();
@@ -432,20 +481,22 @@ function updatePartnerBadge() {
 }
 
 function updateAuthTabUi() {
-  const isFemale = state.gender === "female";
-  if (els.genderFemaleButton) {
-    els.genderFemaleButton.classList.toggle("is-selected", isFemale);
-    els.genderFemaleButton.setAttribute("aria-pressed", String(isFemale));
-  }
-  if (els.genderMaleButton) {
-    els.genderMaleButton.classList.toggle("is-selected", !isFemale);
-    els.genderMaleButton.setAttribute("aria-pressed", String(!isFemale));
-  }
+  const currentPaletteId = state.gender || "female";
+  const palette = PALETTE_THEMES.find((p) => p.id === currentPaletteId) || PALETTE_THEMES[0];
+  const isFemale = currentPaletteId === "female";
+
+  // Update all theme card selections
+  document.querySelectorAll("[data-palette-id]").forEach((btn) => {
+    const isActive = btn.dataset.paletteId === currentPaletteId;
+    btn.classList.toggle("is-selected", isActive);
+    btn.setAttribute("aria-pressed", String(isActive));
+  });
+
   if (els.settingsThemeFemaleButton) {
     els.settingsThemeFemaleButton.classList.toggle("is-selected", isFemale);
   }
   if (els.settingsThemeMaleButton) {
-    els.settingsThemeMaleButton.classList.toggle("is-selected", !isFemale);
+    els.settingsThemeMaleButton.classList.toggle("is-selected", currentPaletteId === "male");
   }
 
   if (state.user) {
@@ -453,12 +504,12 @@ function updateAuthTabUi() {
     if (els.authLoggedInSection) els.authLoggedInSection.hidden = false;
     if (els.authProfileEmail) els.authProfileEmail.textContent = state.user.email || "Active User";
     if (els.authProfileAvatar) {
-      els.authProfileAvatar.textContent = isFemale ? "F" : "M";
-      els.authProfileAvatar.style.background = isFemale ? "#e30b5c" : "#A4D8FF";
-      els.authProfileAvatar.style.color = isFemale ? "#fff" : "#1a2530";
+      els.authProfileAvatar.textContent = palette.name.substring(0, 2).toUpperCase();
+      els.authProfileAvatar.style.background = "linear-gradient(135deg, " + palette.bg + " 0%, " + palette.primary + " 100%)";
+      els.authProfileAvatar.style.color = palette.dark ? "#fff" : "#1a1218";
     }
     if (els.authProfileThemeTag) {
-      els.authProfileThemeTag.textContent = isFemale ? "Female Palette Active" : "Male Palette Active";
+      els.authProfileThemeTag.textContent = palette.name + " Active";
     }
     if (els.authProfilePartnerTag) {
       els.authProfilePartnerTag.textContent = state.space?.member_count >= 2
@@ -1011,7 +1062,7 @@ async function fetchMySpace() {
 
   if (data.profile) {
     state.profile = data.profile;
-    if (data.profile.gender) setGender(data.profile.gender);
+    if (data.profile.gender) setPalette(data.profile.gender);
     if (typeof data.profile.haptics_enabled === "boolean") {
       state.hapticsEnabled = data.profile.haptics_enabled;
       localStorage.setItem(STORAGE_KEYS.haptics, String(state.hapticsEnabled));

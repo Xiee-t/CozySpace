@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -44,27 +44,90 @@
           <p class="panel-note" style="margin-bottom: 14px;">Choose your visual side to customize your workspace colors.</p>
 
           <div class="gender-selection-grid auth-gender-grid">
-            <button class="gender-card gender-card--female is-selected" id="genderFemaleButton" type="button" aria-pressed="true">
-              <div class="gender-card-header">
-                <span class="gender-swatch gender-swatch--female" aria-hidden="true"></span>
-                <span class="gender-pill gender-pill--female">Female</span>
+            <button class="gender-card gender-card--female is-selected" id="genderFemaleButton" type="button" data-palette-id="female" aria-pressed="true">
+              <div class="theme-card-preview">
+                <span class="theme-preview-top" style="background:#2e1e1f;"></span>
+                <span class="theme-preview-bottom" style="background:#e30b5c;"></span>
               </div>
-              <div class="gender-info">
-                <strong>Female Aesthetic</strong>
-                <span>Dark Wine & Soft Rose Palette</span>
-              </div>
+              <div class="gender-info"><strong>Female Aesthetic</strong><span>Dark Wine &amp; Soft Rose</span></div>
               <span class="gender-check" aria-hidden="true">Active</span>
             </button>
-
-            <button class="gender-card gender-card--male" id="genderMaleButton" type="button" aria-pressed="false">
-              <div class="gender-card-header">
-                <span class="gender-swatch gender-swatch--male" aria-hidden="true"></span>
-                <span class="gender-pill gender-pill--male">Male</span>
+            <button class="gender-card gender-card--male" id="genderMaleButton" type="button" data-palette-id="male" aria-pressed="false">
+              <div class="theme-card-preview">
+                <span class="theme-preview-top" style="background:#35393C;"></span>
+                <span class="theme-preview-bottom" style="background:#A4D8FF;"></span>
               </div>
-              <div class="gender-info">
-                <strong>Male Aesthetic</strong>
-                <span>Charcoal Slate & Ice Blue Palette</span>
-              </div>
+              <div class="gender-info"><strong>Male Aesthetic</strong><span>Charcoal &amp; Ice Blue</span></div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+            <button class="gender-card theme-card" id="themeCard-burnt-peach" type="button" data-palette-id="burnt-peach" aria-pressed="false">
+              <div class="theme-card-preview"><span class="theme-preview-top" style="background:#F4F1DE;"></span><span class="theme-preview-bottom" style="background:#E07A5F;"></span></div>
+              <div class="gender-info"><strong>Eggshell + Burnt Peach</strong><span>Warm &amp; Earthy</span></div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+            <button class="gender-card theme-card" id="themeCard-burgundy" type="button" data-palette-id="burgundy" aria-pressed="false">
+              <div class="theme-card-preview"><span class="theme-preview-top" style="background:#F7E6D2;"></span><span class="theme-preview-bottom" style="background:#90202C;"></span></div>
+              <div class="gender-info"><strong>Antique White + Burgundy</strong><span>Classic &amp; Bold</span></div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+            <button class="gender-card theme-card" id="themeCard-icy-blue" type="button" data-palette-id="icy-blue" aria-pressed="false">
+              <div class="theme-card-preview"><span class="theme-preview-top" style="background:#B3D1ED;"></span><span class="theme-preview-bottom" style="background:#516171;"></span></div>
+              <div class="gender-info"><strong>Icy Blue + Blue Slate</strong><span>Cool &amp; Calm</span></div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+            <button class="gender-card theme-card" id="themeCard-powder-petal" type="button" data-palette-id="powder-petal" aria-pressed="false">
+              <div class="theme-card-preview"><span class="theme-preview-top" style="background:#F9DEC9;"></span><span class="theme-preview-bottom" style="background:#3A405A;"></span></div>
+              <div class="gender-info"><strong>Powder Petal + Twilight</strong><span>Soft &amp; Dreamy</span></div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+            <button class="gender-card theme-card" id="themeCard-berry-blush" type="button" data-palette-id="berry-blush" aria-pressed="false">
+              <div class="theme-card-preview"><span class="theme-preview-top" style="background:#974472;"></span><span class="theme-preview-bottom" style="background:#FEDDE8;"></span></div>
+              <div class="gender-info"><strong>Berry Blush + Petal Frost</strong><span>Rich &amp; Feminine</span></div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+            <button class="gender-card theme-card" id="themeCard-shadow-grey" type="button" data-palette-id="shadow-grey" aria-pressed="false">
+              <div class="theme-card-preview"><span class="theme-preview-top" style="background:#272727;"></span><span class="theme-preview-bottom" style="background:#D4AA7D;"></span></div>
+              <div class="gender-info"><strong>Shadow Grey + Sandy Clay</strong><span>Dark &amp; Refined</span></div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+            <button class="gender-card theme-card" id="themeCard-hunter-green" type="button" data-palette-id="hunter-green" aria-pressed="false">
+              <div class="theme-card-preview"><span class="theme-preview-top" style="background:#3E5F44;"></span><span class="theme-preview-bottom" style="background:#DDD6B9;"></span></div>
+              <div class="gender-info"><strong>Hunter Green + Sand Dune</strong><span>Natural &amp; Grounded</span></div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+            <button class="gender-card theme-card" id="themeCard-blue-grey" type="button" data-palette-id="blue-grey" aria-pressed="false">
+              <div class="theme-card-preview"><span class="theme-preview-top" style="background:#7298C7;"></span><span class="theme-preview-bottom" style="background:#F3D98F;"></span></div>
+              <div class="gender-info"><strong>Blue Grey + Morning Butter</strong><span>Airy &amp; Bright</span></div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+            <button class="gender-card theme-card" id="themeCard-thistle" type="button" data-palette-id="thistle" aria-pressed="false">
+              <div class="theme-card-preview"><span class="theme-preview-top" style="background:#D6C8DF;"></span><span class="theme-preview-bottom" style="background:#332927;"></span></div>
+              <div class="gender-info"><strong>Thistle + Deep Mocha</strong><span>Soft &amp; Mysterious</span></div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+            <button class="gender-card theme-card" id="themeCard-parchment" type="button" data-palette-id="parchment" aria-pressed="false">
+              <div class="theme-card-preview"><span class="theme-preview-top" style="background:#EEEDE9;"></span><span class="theme-preview-bottom" style="background:#371B17;"></span></div>
+              <div class="gender-info"><strong>Parchment + Rich Mahogany</strong><span>Timeless &amp; Elegant</span></div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+            <button class="gender-card theme-card" id="themeCard-cherry-blossom" type="button" data-palette-id="cherry-blossom" aria-pressed="false">
+              <div class="theme-card-preview"><span class="theme-preview-top" style="background:#F9A8BB;"></span><span class="theme-preview-bottom" style="background:#1A1265;"></span></div>
+              <div class="gender-info"><strong>Cherry Blossom + Deep Twilight</strong><span>Vivid &amp; Romantic</span></div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+            <button class="gender-card theme-card" id="themeCard-lavender-blush" type="button" data-palette-id="lavender-blush" aria-pressed="false">
+              <div class="theme-card-preview"><span class="theme-preview-top" style="background:#FFE6ED;"></span><span class="theme-preview-bottom" style="background:#CF7486;"></span></div>
+              <div class="gender-info"><strong>Lavender Blush + Blush</strong><span>Soft &amp; Gentle</span></div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+            <button class="gender-card theme-card" id="themeCard-espresso" type="button" data-palette-id="espresso" aria-pressed="false">
+              <div class="theme-card-preview"><span class="theme-preview-top" style="background:#3E2723;"></span><span class="theme-preview-bottom" style="background:#F4C9D6;"></span></div>
+              <div class="gender-info"><strong>Espresso + Peony</strong><span>Deep &amp; Intimate</span></div>
+              <span class="gender-check" aria-hidden="true">Active</span>
+            </button>
+            <button class="gender-card theme-card" id="themeCard-soft-linen" type="button" data-palette-id="soft-linen" aria-pressed="false">
+              <div class="theme-card-preview"><span class="theme-preview-top" style="background:#F5F1E6;"></span><span class="theme-preview-bottom" style="background:#F9A8BB;"></span></div>
+              <div class="gender-info"><strong>Soft Linen + Cherry Blossom</strong><span>Airy &amp; Floral</span></div>
               <span class="gender-check" aria-hidden="true">Active</span>
             </button>
           </div>

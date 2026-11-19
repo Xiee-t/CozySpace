@@ -67,6 +67,278 @@ body.theme-male {
   --hero-card-bg: linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.06));
 }
 
+/* =====================================================
+   EXTENDED PALETTE THEMES (14 new palettes)
+   ===================================================== */
+
+body.theme-burnt-peach {
+  --color-bg: #F4F1DE;
+  --color-bg-blush: rgba(224, 122, 95, 0.14);
+  --color-card: rgba(0,0,0,0.06);
+  --color-ink: #3a2a20;
+  --color-muted: #7a5a50;
+  --color-primary: #E07A5F;
+  --color-primary-deep: #b55c42;
+  --color-primary-soft: rgba(224, 122, 95, 0.2);
+  --surface-soft: rgba(0,0,0,0.05);
+  --bottom-bar-bg: rgba(244, 241, 222, 0.88);
+  --interactive-glow: rgba(224, 122, 95, 0.25);
+  --body-background: radial-gradient(circle at 18% 8%, rgba(224, 122, 95, 0.1), transparent 22rem),
+    linear-gradient(160deg, #F4F1DE, #ece8cc);
+  --hero-card-bg: linear-gradient(180deg, rgba(224,122,95,0.08), rgba(224,122,95,0.04));
+  --hero-card-accent: rgba(224, 122, 95, 0.12);
+}
+
+body.theme-burgundy {
+  --color-bg: #F7E6D2;
+  --color-bg-blush: rgba(144, 32, 44, 0.12);
+  --color-card: rgba(0,0,0,0.06);
+  --color-ink: #2a0a0e;
+  --color-muted: #6a3040;
+  --color-primary: #90202C;
+  --color-primary-deep: #6a1520;
+  --color-primary-soft: rgba(144, 32, 44, 0.18);
+  --surface-soft: rgba(0,0,0,0.05);
+  --bottom-bar-bg: rgba(247, 230, 210, 0.88);
+  --interactive-glow: rgba(144, 32, 44, 0.22);
+  --body-background: radial-gradient(circle at 18% 8%, rgba(144, 32, 44, 0.08), transparent 22rem),
+    linear-gradient(160deg, #F7E6D2, #f0d8c0);
+  --hero-card-bg: linear-gradient(180deg, rgba(144,32,44,0.07), rgba(144,32,44,0.03));
+  --hero-card-accent: rgba(144, 32, 44, 0.1);
+}
+
+body.theme-icy-blue {
+  --color-bg: #B3D1ED;
+  --color-bg-blush: rgba(81, 97, 113, 0.14);
+  --color-card: rgba(0,0,0,0.08);
+  --color-ink: #1c2a35;
+  --color-muted: #4a5e6e;
+  --color-primary: #516171;
+  --color-primary-deep: #3a4a58;
+  --color-primary-soft: rgba(81, 97, 113, 0.2);
+  --surface-soft: rgba(0,0,0,0.07);
+  --bottom-bar-bg: rgba(179, 209, 237, 0.88);
+  --interactive-glow: rgba(81, 97, 113, 0.25);
+  --body-background: radial-gradient(circle at 18% 8%, rgba(81, 97, 113, 0.1), transparent 22rem),
+    linear-gradient(160deg, #B3D1ED, #9dc2e0);
+  --hero-card-bg: linear-gradient(180deg, rgba(81,97,113,0.1), rgba(81,97,113,0.05));
+  --hero-card-accent: rgba(81, 97, 113, 0.12);
+}
+
+body.theme-powder-petal {
+  --color-bg: #F9DEC9;
+  --color-bg-blush: rgba(58, 64, 90, 0.12);
+  --color-card: rgba(0,0,0,0.06);
+  --color-ink: #1c2030;
+  --color-muted: #4a5068;
+  --color-primary: #3A405A;
+  --color-primary-deep: #272c40;
+  --color-primary-soft: rgba(58, 64, 90, 0.18);
+  --surface-soft: rgba(0,0,0,0.05);
+  --bottom-bar-bg: rgba(249, 222, 201, 0.88);
+  --interactive-glow: rgba(58, 64, 90, 0.22);
+  --body-background: radial-gradient(circle at 18% 8%, rgba(58, 64, 90, 0.08), transparent 22rem),
+    linear-gradient(160deg, #F9DEC9, #f2d4be);
+  --hero-card-bg: linear-gradient(180deg, rgba(58,64,90,0.07), rgba(58,64,90,0.03));
+  --hero-card-accent: rgba(58, 64, 90, 0.1);
+}
+
+body.theme-berry-blush {
+  --color-bg: #FEDDE8;
+  --color-bg-blush: rgba(151, 68, 114, 0.14);
+  --color-card: rgba(0,0,0,0.06);
+  --color-ink: #2a0a1a;
+  --color-muted: #6a2a50;
+  --color-primary: #974472;
+  --color-primary-deep: #722f56;
+  --color-primary-soft: rgba(151, 68, 114, 0.2);
+  --surface-soft: rgba(0,0,0,0.05);
+  --bottom-bar-bg: rgba(254, 221, 232, 0.88);
+  --interactive-glow: rgba(151, 68, 114, 0.25);
+  --body-background: radial-gradient(circle at 18% 8%, rgba(151, 68, 114, 0.1), transparent 22rem),
+    linear-gradient(160deg, #FEDDE8, #ffd0de);
+  --hero-card-bg: linear-gradient(180deg, rgba(151,68,114,0.08), rgba(151,68,114,0.04));
+  --hero-card-accent: rgba(151, 68, 114, 0.12);
+}
+
+body.theme-shadow-grey {
+  --color-bg: #272727;
+  --color-bg-blush: rgba(212, 170, 125, 0.14);
+  --color-card: rgba(255,255,255,0.06);
+  --color-ink: #e8d8c0;
+  --color-muted: #a89070;
+  --color-primary: #D4AA7D;
+  --color-primary-deep: #b08a5a;
+  --color-primary-soft: rgba(212, 170, 125, 0.2);
+  --surface-soft: rgba(255,255,255,0.05);
+  --bottom-bar-bg: rgba(39, 39, 39, 0.9);
+  --interactive-glow: rgba(212, 170, 125, 0.25);
+  --body-background: radial-gradient(circle at 18% 8%, rgba(212, 170, 125, 0.1), transparent 22rem),
+    linear-gradient(160deg, #272727, #1a1a1a);
+  --hero-card-bg: linear-gradient(180deg, rgba(212,170,125,0.08), rgba(212,170,125,0.04));
+  --hero-card-accent: rgba(212, 170, 125, 0.12);
+}
+
+body.theme-hunter-green {
+  --color-bg: #DDD6B9;
+  --color-bg-blush: rgba(62, 95, 68, 0.14);
+  --color-card: rgba(0,0,0,0.07);
+  --color-ink: #1a2a1c;
+  --color-muted: #4a6a4e;
+  --color-primary: #3E5F44;
+  --color-primary-deep: #2c4530;
+  --color-primary-soft: rgba(62, 95, 68, 0.2);
+  --surface-soft: rgba(0,0,0,0.06);
+  --bottom-bar-bg: rgba(221, 214, 185, 0.88);
+  --interactive-glow: rgba(62, 95, 68, 0.25);
+  --body-background: radial-gradient(circle at 18% 8%, rgba(62, 95, 68, 0.1), transparent 22rem),
+    linear-gradient(160deg, #DDD6B9, #d0c9a8);
+  --hero-card-bg: linear-gradient(180deg, rgba(62,95,68,0.08), rgba(62,95,68,0.04));
+  --hero-card-accent: rgba(62, 95, 68, 0.12);
+}
+
+body.theme-blue-grey {
+  --color-bg: #F3D98F;
+  --color-bg-blush: rgba(114, 152, 199, 0.14);
+  --color-card: rgba(0,0,0,0.07);
+  --color-ink: #1a2a40;
+  --color-muted: #4a6080;
+  --color-primary: #7298C7;
+  --color-primary-deep: #5278a8;
+  --color-primary-soft: rgba(114, 152, 199, 0.22);
+  --surface-soft: rgba(0,0,0,0.06);
+  --bottom-bar-bg: rgba(243, 217, 143, 0.88);
+  --interactive-glow: rgba(114, 152, 199, 0.28);
+  --body-background: radial-gradient(circle at 18% 8%, rgba(114, 152, 199, 0.12), transparent 22rem),
+    linear-gradient(160deg, #F3D98F, #ebce7a);
+  --hero-card-bg: linear-gradient(180deg, rgba(114,152,199,0.1), rgba(114,152,199,0.05));
+  --hero-card-accent: rgba(114, 152, 199, 0.14);
+}
+
+body.theme-thistle {
+  --color-bg: #D6C8DF;
+  --color-bg-blush: rgba(51, 41, 39, 0.14);
+  --color-card: rgba(0,0,0,0.07);
+  --color-ink: #1a1218;
+  --color-muted: #5a4858;
+  --color-primary: #332927;
+  --color-primary-deep: #1e1816;
+  --color-primary-soft: rgba(51, 41, 39, 0.18);
+  --surface-soft: rgba(0,0,0,0.06);
+  --bottom-bar-bg: rgba(214, 200, 223, 0.88);
+  --interactive-glow: rgba(51, 41, 39, 0.22);
+  --body-background: radial-gradient(circle at 18% 8%, rgba(51, 41, 39, 0.08), transparent 22rem),
+    linear-gradient(160deg, #D6C8DF, #c8b8d4);
+  --hero-card-bg: linear-gradient(180deg, rgba(51,41,39,0.07), rgba(51,41,39,0.03));
+  --hero-card-accent: rgba(51, 41, 39, 0.1);
+}
+
+body.theme-parchment {
+  --color-bg: #EEEDE9;
+  --color-bg-blush: rgba(55, 27, 23, 0.1);
+  --color-card: rgba(0,0,0,0.05);
+  --color-ink: #1a0e0c;
+  --color-muted: #6a4038;
+  --color-primary: #371B17;
+  --color-primary-deep: #22100e;
+  --color-primary-soft: rgba(55, 27, 23, 0.16);
+  --surface-soft: rgba(0,0,0,0.04);
+  --bottom-bar-bg: rgba(238, 237, 233, 0.9);
+  --interactive-glow: rgba(55, 27, 23, 0.2);
+  --body-background: radial-gradient(circle at 18% 8%, rgba(55, 27, 23, 0.07), transparent 22rem),
+    linear-gradient(160deg, #EEEDE9, #e8e6e0);
+  --hero-card-bg: linear-gradient(180deg, rgba(55,27,23,0.06), rgba(55,27,23,0.02));
+  --hero-card-accent: rgba(55, 27, 23, 0.08);
+}
+
+body.theme-cherry-blossom {
+  --color-bg: #F9A8BB;
+  --color-bg-blush: rgba(26, 18, 101, 0.14);
+  --color-card: rgba(0,0,0,0.06);
+  --color-ink: #0e0a3a;
+  --color-muted: #3a2a70;
+  --color-primary: #1A1265;
+  --color-primary-deep: #100b40;
+  --color-primary-soft: rgba(26, 18, 101, 0.2);
+  --surface-soft: rgba(0,0,0,0.05);
+  --bottom-bar-bg: rgba(249, 168, 187, 0.88);
+  --interactive-glow: rgba(26, 18, 101, 0.25);
+  --body-background: radial-gradient(circle at 18% 8%, rgba(26, 18, 101, 0.1), transparent 22rem),
+    linear-gradient(160deg, #F9A8BB, #f598ae);
+  --hero-card-bg: linear-gradient(180deg, rgba(26,18,101,0.08), rgba(26,18,101,0.04));
+  --hero-card-accent: rgba(26, 18, 101, 0.12);
+}
+
+body.theme-lavender-blush {
+  --color-bg: #FFE6ED;
+  --color-bg-blush: rgba(207, 116, 134, 0.14);
+  --color-card: rgba(0,0,0,0.06);
+  --color-ink: #2a0a14;
+  --color-muted: #7a4050;
+  --color-primary: #CF7486;
+  --color-primary-deep: #a85568;
+  --color-primary-soft: rgba(207, 116, 134, 0.2);
+  --surface-soft: rgba(0,0,0,0.05);
+  --bottom-bar-bg: rgba(255, 230, 237, 0.9);
+  --interactive-glow: rgba(207, 116, 134, 0.25);
+  --body-background: radial-gradient(circle at 18% 8%, rgba(207, 116, 134, 0.1), transparent 22rem),
+    linear-gradient(160deg, #FFE6ED, #ffd8e4);
+  --hero-card-bg: linear-gradient(180deg, rgba(207,116,134,0.08), rgba(207,116,134,0.04));
+  --hero-card-accent: rgba(207, 116, 134, 0.12);
+}
+
+body.theme-espresso {
+  --color-bg: #3E2723;
+  --color-bg-blush: rgba(244, 201, 214, 0.14);
+  --color-card: rgba(255,255,255,0.06);
+  --color-ink: #f4e8ed;
+  --color-muted: #c8a0b0;
+  --color-primary: #F4C9D6;
+  --color-primary-deep: #d8a0b4;
+  --color-primary-soft: rgba(244, 201, 214, 0.2);
+  --surface-soft: rgba(255,255,255,0.05);
+  --bottom-bar-bg: rgba(62, 39, 35, 0.9);
+  --interactive-glow: rgba(244, 201, 214, 0.25);
+  --body-background: radial-gradient(circle at 18% 8%, rgba(244, 201, 214, 0.1), transparent 22rem),
+    linear-gradient(160deg, #3E2723, #2c1c18);
+  --hero-card-bg: linear-gradient(180deg, rgba(244,201,214,0.08), rgba(244,201,214,0.04));
+  --hero-card-accent: rgba(244, 201, 214, 0.12);
+}
+
+body.theme-soft-linen {
+  --color-bg: #F5F1E6;
+  --color-bg-blush: rgba(249, 168, 187, 0.14);
+  --color-card: rgba(0,0,0,0.06);
+  --color-ink: #2a1a20;
+  --color-muted: #7a5060;
+  --color-primary: #F9A8BB;
+  --color-primary-deep: #d888a0;
+  --color-primary-soft: rgba(249, 168, 187, 0.22);
+  --surface-soft: rgba(0,0,0,0.05);
+  --bottom-bar-bg: rgba(245, 241, 230, 0.9);
+  --interactive-glow: rgba(249, 168, 187, 0.28);
+  --body-background: radial-gradient(circle at 18% 8%, rgba(249, 168, 187, 0.1), transparent 22rem),
+    linear-gradient(160deg, #F5F1E6, #ede9da);
+  --hero-card-bg: linear-gradient(180deg, rgba(249,168,187,0.08), rgba(249,168,187,0.04));
+  --hero-card-accent: rgba(249, 168, 187, 0.12);
+}
+
+/* Theme card preview swatch styles */
+.theme-card-preview {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 36px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+.theme-preview-top,
+.theme-preview-bottom {
+  flex: 1;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1753,6 +2025,19 @@ h2 {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-top: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary-soft) transparent;
+}
+
+.auth-gender-grid::-webkit-scrollbar {
+  width: 4px;
+}
+.auth-gender-grid::-webkit-scrollbar-thumb {
+  background: var(--color-primary-soft);
+  border-radius: 4px;
 }
 
 .gender-card {
