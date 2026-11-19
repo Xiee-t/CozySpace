@@ -22,7 +22,7 @@ if (fs.existsSync(phpEntry)) {
 }
 
 // Files to copy directly to dist (overwrites with latest root files)
-const filesToCopy = ['index.html', 'style.css', 'app.js'];
+const filesToCopy = ['index.html', 'style.css', 'app.js', 'supabase.js'];
 for (const file of filesToCopy) {
   if (fs.existsSync(file)) {
     fs.copyFileSync(file, path.join(distDir, file));
