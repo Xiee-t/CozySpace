@@ -16,7 +16,7 @@ const STORAGE_KEYS = {
   spaceId: "cozy-space-space-id",
 };
 
-const savedGender = localStorage.getItem(STORAGE_KEYS.gender) || "female";
+const savedGender = localStorage.getItem(STORAGE_KEYS.gender) || "rose-velvet";
 const savedHaptics = localStorage.getItem(STORAGE_KEYS.haptics) !== "false";
 const savedSpaceId = localStorage.getItem(STORAGE_KEYS.spaceId) || DEFAULT_SPACE_ID;
 
@@ -87,6 +87,23 @@ const els = {
   photoPreview: document.querySelector("#photoPreview"),
   photoEmpty: document.querySelector("#photoEmpty"),
   photoStatus: document.querySelector("#photoStatus"),
+
+  // Theme Banners & Quick Switchers
+  authBannerDot: document.querySelector("#authBannerDot"),
+  authBannerText: document.querySelector("#authBannerText"),
+  quickThemeBar: document.querySelector("#quickThemeBar"),
+  quickThemeScroll: document.querySelector("#quickThemeScroll"),
+  settingsThemeGallery: document.querySelector("#settingsThemeGallery"),
+
+  // 4-7-8 Breathing Widget
+  breathingPanel: document.querySelector("#breathingPanel"),
+  breathingCircle: document.querySelector("#breathingCircle"),
+  breathingCircleLabel: document.querySelector("#breathingCircleLabel"),
+  breathingCountdown: document.querySelector("#breathingCountdown"),
+  breathingPhaseLabel: document.querySelector("#breathingPhaseLabel"),
+  breathingCycleCount: document.querySelector("#breathingCycleCount"),
+  breathingStartBtn: document.querySelector("#breathingStartBtn"),
+  breathingResetBtn: document.querySelector("#breathingResetBtn"),
 
   // Profile Strip
   authProfileStrip: document.querySelector("#authProfileStrip"),
@@ -212,6 +229,7 @@ async function init() {
   renderDailyPhoto();
   renderNotes();
   wireUiEvents();
+  renderThemeGalleries();
   setPalette(state.gender);
   updateHapticsUi();
   updatePartnerBadge();
@@ -247,6 +265,10 @@ function wireUiEvents() {
   els.openAuthModalButton?.addEventListener("click", () => setActiveView("signin"));
   els.openInviteModalButton?.addEventListener("click", () => setActiveView("settings"));
   els.openSettingsModalButton?.addEventListener("click", () => setActiveView("settings"));
+
+  // Breathing Guide Events
+  els.breathingStartBtn?.addEventListener("click", startBreathingSession);
+  els.breathingResetBtn?.addEventListener("click", resetBreathingSession);
 
   // Sign In Tab & Theme Palette Events
   els.genderFemaleButton?.addEventListener("click", () => setPalette("female"));
@@ -342,65 +364,91 @@ function wireUiEvents() {
 }
 
 // -------------------------------------------------------------
-// Theme Palette Data & Management
+// Theme Palette Data & Management (Pure Evocative Aesthetic Themes)
 // -------------------------------------------------------------
 
 const PALETTE_THEMES = [
-  { id: "female",         name: "Female Aesthetic",             bg: "#2e1e1f", primary: "#e30b5c",   dark: true  },
-  { id: "male",           name: "Male Aesthetic",               bg: "#35393C", primary: "#A4D8FF",   dark: true  },
-  { id: "burnt-peach",    name: "Eggshell + Burnt Peach",       bg: "#F4F1DE", primary: "#E07A5F",   dark: false },
-  { id: "burgundy",       name: "Antique White + Burgundy",     bg: "#F7E6D2", primary: "#90202C",   dark: false },
-  { id: "icy-blue",       name: "Icy Blue + Blue Slate",        bg: "#B3D1ED", primary: "#516171",   dark: false },
-  { id: "powder-petal",   name: "Powder Petal + Twilight",      bg: "#F9DEC9", primary: "#3A405A",   dark: false },
-  { id: "berry-blush",    name: "Berry Blush + Petal Frost",    bg: "#974472", primary: "#FEDDE8",   dark: true  },
-  { id: "shadow-grey",    name: "Shadow Grey + Sandy Clay",     bg: "#272727", primary: "#D4AA7D",   dark: true  },
-  { id: "hunter-green",   name: "Hunter Green + Sand Dune",     bg: "#3E5F44", primary: "#DDD6B9",   dark: true  },
-  { id: "blue-grey",      name: "Blue Grey + Morning Butter",   bg: "#7298C7", primary: "#F3D98F",   dark: true  },
-  { id: "thistle",        name: "Thistle + Deep Mocha",         bg: "#D6C8DF", primary: "#332927",   dark: false },
-  { id: "parchment",      name: "Parchment + Rich Mahogany",    bg: "#EEEDE9", primary: "#371B17",   dark: false },
-  { id: "cherry-blossom", name: "Cherry Blossom + Deep Twilight", bg: "#F9A8BB", primary: "#1A1265", dark: false },
-  { id: "lavender-blush", name: "Lavender Blush + Blush",       bg: "#FFE6ED", primary: "#CF7486",   dark: false },
-  { id: "espresso",       name: "Espresso + Peony",             bg: "#3E2723", primary: "#F4C9D6",   dark: true  },
-  { id: "soft-linen",     name: "Soft Linen + Cherry Blossom",  bg: "#F5F1E6", primary: "#F9A8BB",   dark: false },
+  { id: "rose-velvet",    name: "Rose Velvet",       subtitle: "Dark Wine & Soft Rose",        bg: "#2e1e1f", primary: "#e30b5c", dark: true  },
+  { id: "nordic-frost",   name: "Nordic Frost",      subtitle: "Charcoal & Ice Blue",          bg: "#35393C", primary: "#A4D8FF", dark: true  },
+  { id: "burnt-peach",    name: "Burnt Peach",       subtitle: "Eggshell & Burnt Peach",       bg: "#F4F1DE", primary: "#E07A5F", dark: false },
+  { id: "burgundy",       name: "Antique Burgundy",  subtitle: "Antique White & Burgundy",     bg: "#F7E6D2", primary: "#90202C", dark: false },
+  { id: "blue-slate",     name: "Nordic Slate",      subtitle: "Icy Blue & Blue Slate",        bg: "#B3D1ED", primary: "#516171", dark: false },
+  { id: "twilight-indigo",name: "Twilight Indigo",   subtitle: "Powder Petal & Twilight",      bg: "#F9DEC9", primary: "#3A405A", dark: false },
+  { id: "berry-blush",    name: "Berry Blush",       subtitle: "Berry Blush & Petal Frost",    bg: "#974472", primary: "#FEDDE8", dark: true  },
+  { id: "shadow-grey",    name: "Shadow Grey",       subtitle: "Shadow Grey & Sandy Clay",     bg: "#272727", primary: "#D4AA7D", dark: true  },
+  { id: "hunter-green",   name: "Hunter Green",      subtitle: "Hunter Green & Sand Dune",     bg: "#3E5F44", primary: "#DDD6B9", dark: true  },
+  { id: "morning-butter", name: "Morning Butter",    subtitle: "Blue Grey & Morning Butter",   bg: "#7298C7", primary: "#F3D98F", dark: true  },
+  { id: "thistle-mocha",  name: "Thistle Mocha",     subtitle: "Thistle & Deep Mocha",         bg: "#D6C8DF", primary: "#332927", dark: false },
+  { id: "rich-mahogany",  name: "Rich Mahogany",     subtitle: "Parchment & Rich Mahogany",    bg: "#EEEDE9", primary: "#371B17", dark: false },
+  { id: "cherry-twilight",name: "Cherry Twilight",   subtitle: "Cherry Blossom & Twilight",    bg: "#F9A8BB", primary: "#1A1265", dark: false },
+  { id: "lavender-blush", name: "Lavender Blush",    subtitle: "Lavender Blush & Blush",       bg: "#FFE6ED", primary: "#CF7486", dark: false },
+  { id: "espresso-peony", name: "Espresso Peony",    subtitle: "Espresso & Peony",             bg: "#3E2723", primary: "#F4C9D6", dark: true  },
+  { id: "soft-linen",     name: "Soft Linen",        subtitle: "Soft Linen & Cherry Blossom",  bg: "#F5F1E6", primary: "#F9A8BB", dark: false },
 ];
 
-// All theme CSS body classes to remove before applying a new one
+const THEME_ALIASES = {
+  female: "rose-velvet",
+  me: "rose-velvet",
+  male: "nordic-frost",
+  his: "nordic-frost",
+  "icy-blue": "blue-slate",
+  "powder-petal": "twilight-indigo",
+  "blue-grey": "morning-butter",
+  thistle: "thistle-mocha",
+  parchment: "rich-mahogany",
+  "cherry-blossom": "cherry-twilight",
+  espresso: "espresso-peony",
+};
+
+function resolvePaletteId(id) {
+  if (!id) return "rose-velvet";
+  return THEME_ALIASES[id] || id;
+}
+
 const ALL_THEME_CLASSES = [
   "theme-female", "theme-me", "theme-male", "theme-his",
-  "theme-burnt-peach", "theme-burgundy", "theme-icy-blue", "theme-powder-petal",
-  "theme-berry-blush", "theme-shadow-grey", "theme-hunter-green", "theme-blue-grey",
-  "theme-thistle", "theme-parchment", "theme-cherry-blossom", "theme-lavender-blush",
-  "theme-espresso", "theme-soft-linen",
+  "theme-rose-velvet", "theme-nordic-frost",
+  "theme-burnt-peach", "theme-burgundy", "theme-blue-slate", "theme-icy-blue",
+  "theme-twilight-indigo", "theme-powder-petal",
+  "theme-berry-blush", "theme-shadow-grey", "theme-hunter-green",
+  "theme-morning-butter", "theme-blue-grey",
+  "theme-thistle-mocha", "theme-thistle",
+  "theme-rich-mahogany", "theme-parchment",
+  "theme-cherry-twilight", "theme-cherry-blossom",
+  "theme-lavender-blush",
+  "theme-espresso-peony", "theme-espresso",
+  "theme-soft-linen",
 ];
 
-function setPalette(paletteId) {
+function setPalette(rawPaletteId) {
+  const paletteId = resolvePaletteId(rawPaletteId);
   const palette = PALETTE_THEMES.find((p) => p.id === paletteId) || PALETTE_THEMES[0];
-  state.gender = paletteId;
-  state.activeTheme = paletteId;
-  localStorage.setItem(STORAGE_KEYS.gender, paletteId);
-  localStorage.setItem(STORAGE_KEYS.theme, paletteId);
+  state.gender = palette.id;
+  state.activeTheme = palette.id;
+  localStorage.setItem(STORAGE_KEYS.gender, palette.id);
+  localStorage.setItem(STORAGE_KEYS.theme, palette.id);
 
-  // Update all theme card selection states
+  // Update all theme cards and radio buttons across views
   document.querySelectorAll("[data-palette-id]").forEach((btn) => {
-    const isActive = btn.dataset.paletteId === paletteId;
+    const btnPaletteId = resolvePaletteId(btn.dataset.paletteId);
+    const isActive = btnPaletteId === palette.id;
     btn.classList.toggle("is-selected", isActive);
+    btn.classList.toggle("is-active", isActive);
     btn.setAttribute("aria-pressed", String(isActive));
+    if (btn.hasAttribute("aria-checked")) {
+      btn.setAttribute("aria-checked", String(isActive));
+    }
   });
 
-  // Also keep legacy female/male button IDs in sync
-  const isFemale = paletteId === "female";
-  const isMale = paletteId === "male";
-  els.settingsThemeFemaleButton?.classList.toggle("is-selected", isFemale);
-  els.settingsThemeMaleButton?.classList.toggle("is-selected", isMale);
-
   applyPaletteToBody(palette);
+  updateThemeBanner(palette);
   updateUserBadge();
 
   if (supabaseClient && state.user) {
     supabaseClient
       .from("profiles")
       .update({
-        gender: paletteId,
+        gender: palette.id,
         theme_color: palette.primary,
         updated_at: new Date().toISOString(),
       })
@@ -417,24 +465,42 @@ function setGender(gender) {
 
 function setJoinGender(gender) {
   setPalette(gender);
-  els.joinGenderFemaleButton?.classList.toggle("is-selected", gender === "female");
-  els.joinGenderMaleButton?.classList.toggle("is-selected", gender === "male");
+}
+
+function updateThemeBanner(palette) {
+  if (els.authBannerText) {
+    els.authBannerText.textContent = `${palette.name} Aesthetic`;
+  }
+  if (els.authBannerDot) {
+    els.authBannerDot.style.background = palette.primary;
+  }
 }
 
 function applyPaletteToBody(palette) {
-  // Remove all existing theme classes
   document.body.classList.remove(...ALL_THEME_CLASSES);
 
-  // Apply the correct class(es)
-  if (palette.id === "female") {
+  // Apply primary and alias classes
+  document.body.classList.add("theme-" + palette.id);
+  if (palette.id === "rose-velvet") {
     document.body.classList.add("theme-female", "theme-me");
-  } else if (palette.id === "male") {
+  } else if (palette.id === "nordic-frost") {
     document.body.classList.add("theme-male", "theme-his");
-  } else {
-    document.body.classList.add("theme-" + palette.id);
+  } else if (palette.id === "blue-slate") {
+    document.body.classList.add("theme-icy-blue");
+  } else if (palette.id === "twilight-indigo") {
+    document.body.classList.add("theme-powder-petal");
+  } else if (palette.id === "morning-butter") {
+    document.body.classList.add("theme-blue-grey");
+  } else if (palette.id === "thistle-mocha") {
+    document.body.classList.add("theme-thistle");
+  } else if (palette.id === "rich-mahogany") {
+    document.body.classList.add("theme-parchment");
+  } else if (palette.id === "cherry-twilight") {
+    document.body.classList.add("theme-cherry-blossom");
+  } else if (palette.id === "espresso-peony") {
+    document.body.classList.add("theme-espresso");
   }
 
-  // Update swatch if present
   if (els.userThemeSwatch) {
     els.userThemeSwatch.style.background =
       "linear-gradient(135deg, " + palette.bg + " 0%, " + palette.primary + " 100%)";
@@ -445,6 +511,202 @@ function applyPaletteToBody(palette) {
 
 function setTheme(theme) {
   setPalette(theme);
+}
+
+function renderThemeGalleries() {
+  const currentId = resolvePaletteId(state.activeTheme || state.gender || "rose-velvet");
+
+  // 1. Render Quick Theme chips in dashboard hero card
+  if (els.quickThemeScroll) {
+    els.quickThemeScroll.innerHTML = PALETTE_THEMES.map((p) => {
+      const isActive = p.id === currentId;
+      return `<button class="quick-theme-chip${isActive ? " is-active" : ""}" type="button" data-palette-id="${p.id}" role="radio" aria-checked="${isActive}" title="${p.name} (${p.subtitle})">
+        <span class="quick-theme-chip-dot" style="background:${p.primary};"></span>
+        <span>${p.name}</span>
+      </button>`;
+    }).join("");
+
+    els.quickThemeScroll.querySelectorAll(".quick-theme-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        soundEngine.playTone(580, 0.2);
+        setPalette(chip.dataset.paletteId);
+      });
+    });
+  }
+
+  // 2. Render Settings Theme Gallery
+  if (els.settingsThemeGallery) {
+    els.settingsThemeGallery.innerHTML = PALETTE_THEMES.map((p) => {
+      const isActive = p.id === currentId;
+      return `<button class="settings-theme-card${isActive ? " is-active" : ""}" type="button" data-palette-id="${p.id}" role="radio" aria-checked="${isActive}">
+        <div class="settings-theme-swatches">
+          <span class="settings-swatch-half" style="background:${p.bg};"></span>
+          <span class="settings-swatch-half" style="background:${p.primary};"></span>
+        </div>
+        <strong>${p.name}</strong>
+        <span>${p.subtitle}</span>
+      </button>`;
+    }).join("");
+
+    els.settingsThemeGallery.querySelectorAll(".settings-theme-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        soundEngine.playTone(520, 0.25);
+        setPalette(card.dataset.paletteId);
+      });
+    });
+  }
+}
+
+// -------------------------------------------------------------
+// Web Audio Resiliency & Sound Engine
+// -------------------------------------------------------------
+
+class SoundEngine {
+  constructor() {
+    this.ctx = null;
+  }
+
+  init() {
+    try {
+      if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+      }
+      if (this.ctx && this.ctx.state === "suspended") {
+        this.ctx.resume().catch(() => {});
+      }
+    } catch (e) {
+      // Guarded against browser audio restrictions
+    }
+  }
+
+  playTone(freq = 528, duration = 0.5) {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+      gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    } catch (e) {
+      // Null-safety guard
+    }
+  }
+}
+
+const soundEngine = new SoundEngine();
+
+// -------------------------------------------------------------
+// Synchronized 4-7-8 Breathing Relaxation Controller (19s Cycle)
+// -------------------------------------------------------------
+
+const breathingState = {
+  isRunning: false,
+  timerId: null,
+  secondInCycle: 0,
+  cycleCount: 0,
+  phase: "idle", // "inhale" (4s), "hold" (7s), "exhale" (8s)
+};
+
+function startBreathingSession() {
+  soundEngine.init();
+  if (breathingState.isRunning) {
+    pauseBreathingSession();
+    return;
+  }
+
+  breathingState.isRunning = true;
+  if (els.breathingStartBtn) els.breathingStartBtn.textContent = "Pause";
+  if (els.breathingResetBtn) els.breathingResetBtn.disabled = false;
+  if (els.breathingCircle) els.breathingCircle.classList.add("is-animating");
+
+  tickBreathingCycle();
+  breathingState.timerId = window.setInterval(tickBreathingCycle, 1000);
+}
+
+function pauseBreathingSession() {
+  breathingState.isRunning = false;
+  if (breathingState.timerId) {
+    clearInterval(breathingState.timerId);
+    breathingState.timerId = null;
+  }
+  if (els.breathingStartBtn) els.breathingStartBtn.textContent = "Resume";
+  if (els.breathingCircle) els.breathingCircle.classList.remove("is-animating");
+  if (els.breathingPhaseLabel) els.breathingPhaseLabel.textContent = "Session paused";
+}
+
+function resetBreathingSession() {
+  breathingState.isRunning = false;
+  if (breathingState.timerId) {
+    clearInterval(breathingState.timerId);
+    breathingState.timerId = null;
+  }
+  breathingState.secondInCycle = 0;
+  breathingState.cycleCount = 0;
+  breathingState.phase = "idle";
+
+  if (els.breathingStartBtn) els.breathingStartBtn.textContent = "Start";
+  if (els.breathingResetBtn) els.breathingResetBtn.disabled = true;
+  if (els.breathingCircle) {
+    els.breathingCircle.classList.remove("is-animating");
+    els.breathingCircle.style.transform = "scale(1)";
+  }
+  if (els.breathingCircleLabel) els.breathingCircleLabel.textContent = "Ready";
+  if (els.breathingCountdown) els.breathingCountdown.textContent = "--";
+  if (els.breathingPhaseLabel) els.breathingPhaseLabel.textContent = "Click Start to begin session";
+  if (els.breathingCycleCount) els.breathingCycleCount.textContent = "Cycle: 0";
+}
+
+function tickBreathingCycle() {
+  // 19s total: 0..3 (4s Inhale), 4..10 (7s Hold), 11..18 (8s Exhale)
+  const sec = breathingState.secondInCycle % 19;
+
+  if (sec === 0) {
+    breathingState.phase = "inhale";
+    soundEngine.playTone(432, 0.4);
+  } else if (sec === 4) {
+    breathingState.phase = "hold";
+    soundEngine.playTone(528, 0.4);
+  } else if (sec === 11) {
+    breathingState.phase = "exhale";
+    soundEngine.playTone(396, 0.5);
+  }
+
+  let labelText = "";
+  let countdown = 0;
+  let phaseText = "";
+
+  if (sec < 4) {
+    labelText = "Inhale";
+    countdown = 4 - sec;
+    phaseText = "Inhale gently through nose (" + countdown + "s)";
+  } else if (sec < 11) {
+    labelText = "Hold";
+    countdown = 11 - sec;
+    phaseText = "Hold your breath calmly (" + countdown + "s)";
+  } else {
+    labelText = "Exhale";
+    countdown = 19 - sec;
+    phaseText = "Exhale slowly through mouth (" + countdown + "s)";
+  }
+
+  if (els.breathingCircleLabel) els.breathingCircleLabel.textContent = labelText;
+  if (els.breathingCountdown) els.breathingCountdown.textContent = String(countdown);
+  if (els.breathingPhaseLabel) els.breathingPhaseLabel.textContent = phaseText;
+
+  breathingState.secondInCycle++;
+  if (breathingState.secondInCycle % 19 === 0) {
+    breathingState.cycleCount++;
+    if (els.breathingCycleCount) {
+      els.breathingCycleCount.textContent = "Completed Cycles: " + breathingState.cycleCount;
+    }
+  }
 }
 
 function updateUserBadge() {
@@ -469,7 +731,7 @@ function updatePartnerBadge() {
 
   if (state.space && state.space.member_count >= 2) {
     const partner = state.space.members?.find((m) => !m.is_me);
-    const partnerName = partner?.display_name || (partner?.gender === "male" ? "Partner (Male)" : "Partner (Female)");
+    const partnerName = partner?.display_name || "Partner";
     state.partnerName = partnerName;
     els.partnerStatusLabel.textContent = `Partner: ${partnerName}`;
   } else if (state.user) {
@@ -481,23 +743,22 @@ function updatePartnerBadge() {
 }
 
 function updateAuthTabUi() {
-  const currentPaletteId = state.gender || "female";
+  const currentPaletteId = resolvePaletteId(state.gender || "rose-velvet");
   const palette = PALETTE_THEMES.find((p) => p.id === currentPaletteId) || PALETTE_THEMES[0];
-  const isFemale = currentPaletteId === "female";
 
-  // Update all theme card selections
+  // Update all theme card selections across views
   document.querySelectorAll("[data-palette-id]").forEach((btn) => {
-    const isActive = btn.dataset.paletteId === currentPaletteId;
+    const btnPaletteId = resolvePaletteId(btn.dataset.paletteId);
+    const isActive = btnPaletteId === palette.id;
     btn.classList.toggle("is-selected", isActive);
+    btn.classList.toggle("is-active", isActive);
     btn.setAttribute("aria-pressed", String(isActive));
+    if (btn.hasAttribute("aria-checked")) {
+      btn.setAttribute("aria-checked", String(isActive));
+    }
   });
 
-  if (els.settingsThemeFemaleButton) {
-    els.settingsThemeFemaleButton.classList.toggle("is-selected", isFemale);
-  }
-  if (els.settingsThemeMaleButton) {
-    els.settingsThemeMaleButton.classList.toggle("is-selected", currentPaletteId === "male");
-  }
+  updateThemeBanner(palette);
 
   if (state.user) {
     if (els.authLoggedOutSection) els.authLoggedOutSection.hidden = true;

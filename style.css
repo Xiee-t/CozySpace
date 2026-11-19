@@ -27,7 +27,8 @@
 }
 
 body.theme-me,
-body.theme-female {
+body.theme-female,
+body.theme-rose-velvet {
   --color-bg: #2e1e1f;
   --color-bg-blush: rgba(227, 11, 92, 0.12);
   --color-card: rgba(0,0,0,0.16);
@@ -47,7 +48,8 @@ body.theme-female {
 }
 
 body.theme-his,
-body.theme-male {
+body.theme-male,
+body.theme-nordic-frost {
   --color-bg: #35393C;
   --color-bg-blush: rgba(164, 216, 255, 0.12);
   --color-card: rgba(0,0,0,0.12);
@@ -107,7 +109,8 @@ body.theme-burgundy {
   --hero-card-accent: rgba(144, 32, 44, 0.1);
 }
 
-body.theme-icy-blue {
+body.theme-icy-blue,
+body.theme-blue-slate {
   --color-bg: #B3D1ED;
   --color-bg-blush: rgba(81, 97, 113, 0.14);
   --color-card: rgba(0,0,0,0.08);
@@ -125,7 +128,8 @@ body.theme-icy-blue {
   --hero-card-accent: rgba(81, 97, 113, 0.12);
 }
 
-body.theme-powder-petal {
+body.theme-powder-petal,
+body.theme-twilight-indigo {
   --color-bg: #F9DEC9;
   --color-bg-blush: rgba(58, 64, 90, 0.12);
   --color-card: rgba(0,0,0,0.06);
@@ -197,7 +201,8 @@ body.theme-hunter-green {
   --hero-card-accent: rgba(62, 95, 68, 0.12);
 }
 
-body.theme-blue-grey {
+body.theme-blue-grey,
+body.theme-morning-butter {
   --color-bg: #F3D98F;
   --color-bg-blush: rgba(114, 152, 199, 0.14);
   --color-card: rgba(0,0,0,0.07);
@@ -215,7 +220,8 @@ body.theme-blue-grey {
   --hero-card-accent: rgba(114, 152, 199, 0.14);
 }
 
-body.theme-thistle {
+body.theme-thistle,
+body.theme-thistle-mocha {
   --color-bg: #D6C8DF;
   --color-bg-blush: rgba(51, 41, 39, 0.14);
   --color-card: rgba(0,0,0,0.07);
@@ -233,7 +239,8 @@ body.theme-thistle {
   --hero-card-accent: rgba(51, 41, 39, 0.1);
 }
 
-body.theme-parchment {
+body.theme-parchment,
+body.theme-rich-mahogany {
   --color-bg: #EEEDE9;
   --color-bg-blush: rgba(55, 27, 23, 0.1);
   --color-card: rgba(0,0,0,0.05);
@@ -251,7 +258,8 @@ body.theme-parchment {
   --hero-card-accent: rgba(55, 27, 23, 0.08);
 }
 
-body.theme-cherry-blossom {
+body.theme-cherry-blossom,
+body.theme-cherry-twilight {
   --color-bg: #F9A8BB;
   --color-bg-blush: rgba(26, 18, 101, 0.14);
   --color-card: rgba(0,0,0,0.06);
@@ -287,7 +295,8 @@ body.theme-lavender-blush {
   --hero-card-accent: rgba(207, 116, 134, 0.12);
 }
 
-body.theme-espresso {
+body.theme-espresso,
+body.theme-espresso-peony {
   --color-bg: #3E2723;
   --color-bg-blush: rgba(244, 201, 214, 0.14);
   --color-card: rgba(255,255,255,0.06);
@@ -2168,4 +2177,278 @@ h2 {
   font-size: 0.78rem;
   color: var(--color-muted);
 }
+
+/* ========================================================
+   Active Aesthetic Badge (Hero & Auth Header)
+   ======================================================== */
+.active-aesthetic-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--color-ink);
+  margin-bottom: 12px;
+}
+
+.aesthetic-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 10px var(--interactive-glow);
+  flex-shrink: 0;
+}
+
+/* ========================================================
+   Quick Aesthetic Switcher (Dashboard View)
+   ======================================================== */
+.quick-theme-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 18px;
+  background: var(--color-card);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 14px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary-soft) transparent;
+}
+
+.quick-theme-bar::-webkit-scrollbar {
+  height: 3px;
+}
+.quick-theme-bar::-webkit-scrollbar-thumb {
+  background: var(--color-primary-soft);
+  border-radius: 3px;
+}
+
+.quick-theme-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.quick-theme-scroll {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.quick-theme-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--color-ink);
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 160ms ease;
+  user-select: none;
+}
+
+.quick-theme-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.quick-theme-chip.is-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  box-shadow: 0 0 10px var(--interactive-glow);
+  font-weight: 600;
+}
+
+.quick-theme-chip-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ========================================================
+   Settings Theme Swatch Gallery
+   ======================================================== */
+.settings-theme-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.settings-theme-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 180ms ease;
+  text-align: left;
+}
+
+.settings-theme-card:hover {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.settings-theme-card.is-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  box-shadow: 0 0 14px var(--interactive-glow);
+}
+
+.settings-theme-swatches {
+  width: 100%;
+  height: 28px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  margin-bottom: 6px;
+}
+
+.settings-swatch-half {
+  flex: 1;
+}
+
+.settings-theme-card strong {
+  font-size: 0.82rem;
+  color: var(--color-ink);
+  line-height: 1.2;
+}
+
+.settings-theme-card span {
+  font-size: 0.72rem;
+  color: var(--color-muted);
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+/* ========================================================
+   4-7-8 Breathing Relaxation Widget
+   ======================================================== */
+.breathing-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 16px;
+  margin-top: 12px;
+}
+
+.breathing-visual-wrap {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 14px auto 10px;
+}
+
+.breathing-ring-outer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px dashed var(--color-primary-soft);
+  opacity: 0.5;
+}
+
+.breathing-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--color-primary) 0%, var(--color-primary-deep) 100%);
+  box-shadow: 0 0 24px var(--interactive-glow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1);
+  user-select: none;
+}
+
+/* Synchronized 19-second cycle (4s Inhale, 7s Hold, 8s Exhale) */
+/* 4s / 19s = 21.05%, 11s / 19s = 57.89%, 19s / 19s = 100% */
+.breathing-circle.is-animating {
+  animation: breathingCycle 19s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes breathingCycle {
+  0% {
+    transform: scale(1);
+  }
+  21.05% {
+    transform: scale(1.55);
+  }
+  57.89% {
+    transform: scale(1.55);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.breathing-circle-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.breathing-circle-countdown {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.breathing-phase-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-top: 4px;
+  min-height: 1.4em;
+}
+
+.breathing-timer-count {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  margin-top: 2px;
+}
+
+.breathing-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Tablet Responsive Column Span Fix */
+@media (min-width: 600px) and (max-width: 900px) {
+  .dashboard-widgets > .panel:nth-child(odd):last-child {
+    grid-column: span 2;
+  }
+}
+
 
