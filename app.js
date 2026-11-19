@@ -299,9 +299,23 @@ async function init() {
   updatePartnerBadge();
   window.setInterval(renderRelationshipDates, 60 * 1000);
 
-  // Default to Sign In page first and keep tabs hidden until authenticated
-  if (els.bottomTabs) els.bottomTabs.hidden = true;
-  setActiveView("signin");
+  // Check if user is returning from OAuth redirect or has an existing stored session
+  const hasSavedAuthToken = Object.keys(localStorage).some(
+    (k) => k.startsWith("sb-") && k.endsWith("-auth-token")
+  );
+  const isOAuthReturn =
+    window.location.hash.includes("access_token") ||
+    window.location.hash.includes("refresh_token") ||
+    window.location.search.includes("code=");
+
+  if (hasSavedAuthToken || isOAuthReturn) {
+    if (els.bottomTabs) els.bottomTabs.hidden = false;
+    setActiveView("dashboard");
+  } else {
+    // Visitor is not logged in: show Sign In page first with tabs hidden
+    if (els.bottomTabs) els.bottomTabs.hidden = true;
+    setActiveView("signin");
+  }
 
   await initSupabase();
   await checkUrlForInvite();
@@ -1180,9 +1194,7 @@ async function handleEmailSignIn(event) {
   }
 
   showAuthStatus("Signed in successfully.", "is-success");
-  await syncAuthUser(data.user);
-  if (els.bottomTabs) els.bottomTabs.hidden = false;
-  setActiveView("dashboard");
+  handleUserAuthenticated(data.user);
 }
 
 async function handleEmailSignUp(event) {
@@ -1228,9 +1240,7 @@ async function handleEmailSignUp(event) {
 
   if (data?.session && data?.user) {
     showAuthStatus("Account created & signed in.", "is-success");
-    await syncAuthUser(data.user);
-    if (els.bottomTabs) els.bottomTabs.hidden = false;
-    setActiveView("dashboard");
+    handleUserAuthenticated(data.user);
   } else if (data?.user) {
     const { data: signInData, error: signInErr } = await supabaseClient.auth.signInWithPassword({
       email,
@@ -1238,9 +1248,7 @@ async function handleEmailSignUp(event) {
     });
     if (!signInErr && signInData?.user) {
       showAuthStatus("Account created & signed in.", "is-success");
-      await syncAuthUser(signInData.user);
-      if (els.bottomTabs) els.bottomTabs.hidden = false;
-      setActiveView("dashboard");
+      handleUserAuthenticated(signInData.user);
     } else {
       showAuthStatus("Account created. Please click Sign In with your credentials.", "is-success");
     }
@@ -1269,7 +1277,7 @@ async function handleJoinEmailSignIn(event) {
     return;
   }
 
-  await syncAuthUser(data.user);
+  handleUserAuthenticated(data.user);
   const pendingCode = sessionStorage.getItem("cozy-space-pending-join");
   if (pendingCode) {
     await handleJoinSpace(pendingCode);
@@ -1308,7 +1316,7 @@ async function handleJoinEmailSignUp() {
   }
 
   if (data?.session) {
-    await syncAuthUser(data.user);
+    handleUserAuthenticated(data.user);
     if (pendingInvite) {
       await handleJoinSpace(pendingInvite);
     } else {
@@ -1342,26 +1350,64 @@ async function handleSignOut() {
   addActivity("Signed out.");
 }
 
-async function syncAuthUser(user) {
-  if (!user || !supabaseClient) return;
+let isSyncingUser = false;
 
+function handleUserAuthenticated(user) {
+  if (!user) return;
   state.user = user;
 
-  // Process pending join if present
-  const pendingCode = sessionStorage.getItem("cozy-space-pending-join");
-  if (pendingCode) {
-    const { data: joinRes } = await supabaseClient.rpc("join_space_by_invite", {
-      p_invite_code: pendingCode,
-    });
-    sessionStorage.removeItem("cozy-space-pending-join");
+  // 1. Immediately reveal bottom navigation tabs and switch to Main page
+  if (els.bottomTabs) els.bottomTabs.hidden = false;
+  setActiveView("dashboard");
+
+  // 2. Remove OAuth tokens, refresh token, or code query params from URL
+  if (
+    window.location.hash.includes("access_token") ||
+    window.location.hash.includes("refresh_token") ||
+    window.location.search.includes("code=")
+  ) {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  await fetchMySpace();
-  if (els.bottomTabs) els.bottomTabs.hidden = false;
+  // 3. Update badges and account view
   updateUserBadge();
   updatePartnerBadge();
   updateAuthTabUi();
+
+  // 4. Non-blocking cloud space sync in background (never blocks or delays UI)
+  syncAuthUser(user).catch((err) => {
+    console.error("Non-blocking syncAuthUser error:", err);
+  });
+}
+
+async function syncAuthUser(user) {
+  if (!user || !supabaseClient) return;
+  if (isSyncingUser) return;
+  isSyncingUser = true;
+
+  try {
+    state.user = user;
+
+    // Process pending join if present
+    const pendingCode = sessionStorage.getItem("cozy-space-pending-join");
+    if (pendingCode) {
+      const { data: joinRes } = await supabaseClient.rpc("join_space_by_invite", {
+        p_invite_code: pendingCode,
+      });
+      sessionStorage.removeItem("cozy-space-pending-join");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    await fetchMySpace();
+    if (els.bottomTabs) els.bottomTabs.hidden = false;
+    updateUserBadge();
+    updatePartnerBadge();
+    updateAuthTabUi();
+  } catch (err) {
+    console.error("Background sync error:", err);
+  } finally {
+    isSyncingUser = false;
+  }
 }
 
 // -------------------------------------------------------------
@@ -1587,7 +1633,12 @@ async function checkUrlForInvite() {
     els.manualInviteCodeInput.value = cleanCode;
   }
 
-  setActiveView("settings");
+  if (!state.user) {
+    setActiveView("signin");
+    showAuthStatus(`Partner invite detected (${cleanCode}). Sign in or create an account to connect!`, "is-info");
+  } else {
+    setActiveView("settings");
+  }
 
   if (!supabaseClient) return;
 
@@ -1630,26 +1681,22 @@ async function initSupabase() {
   }
 
   try {
-    // Check existing auth session
-    const { data: sessionData } = await client.auth.getSession();
-    if (sessionData?.session?.user) {
-      await syncAuthUser(sessionData.session.user);
-      if (els.bottomTabs) els.bottomTabs.hidden = false;
-      setActiveView("dashboard");
-    } else {
-      if (els.bottomTabs) els.bottomTabs.hidden = true;
-      setActiveView("signin");
-    }
+    const isOAuthReturn =
+      window.location.hash.includes("access_token") ||
+      window.location.hash.includes("refresh_token") ||
+      window.location.search.includes("code=");
 
-    // Listen for auth changes
+    // 1. Listen for auth changes first (captures SIGNED_IN event from OAuth hash)
     client.auth.onAuthStateChange(async (event, session) => {
+      console.log("[Auth State]", event, session?.user?.email);
+
       if (session?.user) {
-        await syncAuthUser(session.user);
-        if (els.bottomTabs) els.bottomTabs.hidden = false;
-        setActiveView("dashboard");
-      } else {
+        handleUserAuthenticated(session.user);
+      } else if (event === "SIGNED_OUT") {
         state.user = null;
         state.profile = null;
+        state.space = null;
+        state.partnerName = "Partner";
         if (els.bottomTabs) els.bottomTabs.hidden = true;
         setActiveView("signin");
         updateUserBadge();
@@ -1658,10 +1705,19 @@ async function initSupabase() {
       }
     });
 
-    // Initial load from cloud
+    // 2. Check existing auth session (for page refresh with active session)
+    const { data: sessionData } = await client.auth.getSession();
+    if (sessionData?.session?.user) {
+      handleUserAuthenticated(sessionData.session.user);
+    } else if (!isOAuthReturn && !state.user) {
+      if (els.bottomTabs) els.bottomTabs.hidden = true;
+      setActiveView("signin");
+    }
+
+    // 3. Initial load from cloud
     await syncAllCloudData();
 
-    // Setup live WebSockets subscriptions
+    // 4. Setup live WebSockets subscriptions
     subscribeToRealtime();
     setConnectionStatus(true);
   } catch (err) {
