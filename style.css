@@ -2205,6 +2205,32 @@ h2 {
 }
 
 /* ========================================================
+   Auth Tip Banner (Clean Helpful Notice)
+   ======================================================== */
+.auth-tip-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--color-muted);
+  font-size: 0.84rem;
+  margin-top: 18px;
+  line-height: 1.4;
+}
+
+.auth-tip-banner svg {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.auth-tip-banner strong {
+  color: var(--color-ink);
+}
+
+/* ========================================================
    Quick Aesthetic Switcher (Dashboard View)
    ======================================================== */
 .quick-theme-bar {
