@@ -207,29 +207,18 @@ const els = {
   authModalCloseButtons: document.querySelectorAll("[data-close-auth-modal]"),
   genderFemaleButton: document.querySelector("#genderFemaleButton"),
   genderMaleButton: document.querySelector("#genderMaleButton"),
-  authModeSignInTab: document.querySelector("#authModeSignInTab"),
-  authModeSignUpTab: document.querySelector("#authModeSignUpTab"),
   authFormSectionTitle: document.querySelector("#authFormSectionTitle"),
   authFormSectionSubtitle: document.querySelector("#authFormSectionSubtitle"),
-  authMethodOauthCard: document.querySelector("#authMethodOauthCard"),
-  authMethodEmailCard: document.querySelector("#authMethodEmailCard"),
-  authOauthWindow: document.querySelector("#authOauthWindow"),
-  authEmailWindow: document.querySelector("#authEmailWindow"),
-  oauthSectionTitle: document.querySelector("#oauthSectionTitle"),
   googleAuthButton: document.querySelector("#googleAuthButton"),
   githubAuthButton: document.querySelector("#githubAuthButton"),
   oauthGoogleButtonLabel: document.querySelector("#oauthGoogleButtonLabel"),
   oauthGithubButtonLabel: document.querySelector("#oauthGithubButtonLabel"),
-  emailSectionTitle: document.querySelector("#emailSectionTitle"),
   emailAuthForm: document.querySelector("#emailAuthForm"),
   authEmailInput: document.querySelector("#authEmailInput"),
   authPasswordInput: document.querySelector("#authPasswordInput"),
   emailSubmitButton: document.querySelector("#emailSubmitButton"),
   authFooterPrompt: document.querySelector("#authFooterPrompt"),
   authFooterToggleBtn: document.querySelector("#authFooterToggleBtn"),
-  oauthWarningNotice: document.querySelector("#oauthWarningNotice"),
-  oauthWarningText: document.querySelector("#oauthWarningText"),
-  switchToEmailFromWarningButton: document.querySelector("#switchToEmailFromWarningButton"),
   authStatusHint: document.querySelector("#authStatusHint"),
 
   // Invite Modal
@@ -361,17 +350,10 @@ function wireUiEvents() {
     btn.addEventListener("click", () => setPalette(btn.dataset.paletteId));
   });
 
-  // Auth Mode (Sign In vs Create Account)
-  els.authModeSignInTab?.addEventListener("click", () => setAuthMode("signin"));
-  els.authModeSignUpTab?.addEventListener("click", () => setAuthMode("signup"));
+  // Auth Mode Switcher (Sign In vs Create Account)
   els.authFooterToggleBtn?.addEventListener("click", () => {
     setAuthMode(state.authMode === "signin" ? "signup" : "signin");
   });
-
-  // Auth Method (Gmail/GitHub vs Email & Password)
-  els.authMethodOauthCard?.addEventListener("click", () => setAuthMethod("oauth"));
-  els.authMethodEmailCard?.addEventListener("click", () => setAuthMethod("email"));
-  els.switchToEmailFromWarningButton?.addEventListener("click", () => setAuthMethod("email"));
 
   // Submit and Action Events
   els.googleAuthButton?.addEventListener("click", () => handleOAuthFlow("google", state.authMode === "signup"));
@@ -878,72 +860,26 @@ function updateAuthTabUi() {
 
 function setAuthMode(mode) {
   state.authMode = mode === "signup" ? "signup" : "signin";
-  if (els.oauthWarningNotice) els.oauthWarningNotice.hidden = true;
   renderAuthSections();
-}
-
-function setAuthMethod(method) {
-  state.authMethod = method === "email" ? "email" : "oauth";
-  if (els.oauthWarningNotice && method === "email") {
-    els.oauthWarningNotice.hidden = true;
-  }
-  renderAuthSections();
-  if (method === "email" && els.authEmailInput) {
-    els.authEmailInput.focus();
-  }
 }
 
 function renderAuthSections() {
   const isSignIn = state.authMode === "signin";
-  const isOauth = state.authMethod === "oauth";
 
-  // Mode segmented toggle
-  if (els.authModeSignInTab) {
-    els.authModeSignInTab.classList.toggle("is-active", isSignIn);
-    els.authModeSignInTab.setAttribute("aria-selected", String(isSignIn));
-  }
-  if (els.authModeSignUpTab) {
-    els.authModeSignUpTab.classList.toggle("is-active", !isSignIn);
-    els.authModeSignUpTab.setAttribute("aria-selected", String(!isSignIn));
-  }
-
-  // Method selector cards
-  if (els.authMethodOauthCard) {
-    els.authMethodOauthCard.classList.toggle("is-active", isOauth);
-    els.authMethodOauthCard.setAttribute("aria-selected", String(isOauth));
-  }
-  if (els.authMethodEmailCard) {
-    els.authMethodEmailCard.classList.toggle("is-active", !isOauth);
-    els.authMethodEmailCard.setAttribute("aria-selected", String(!isOauth));
-  }
-
-  // Windows visibility
-  if (els.authOauthWindow) {
-    els.authOauthWindow.hidden = !isOauth;
-  }
-  if (els.authEmailWindow) {
-    els.authEmailWindow.hidden = isOauth;
-  }
-
-  // Dynamic header text & button labels
   if (isSignIn) {
-    if (els.authFormSectionTitle) els.authFormSectionTitle.textContent = "Sign In to Cozy Space";
-    if (els.authFormSectionSubtitle) els.authFormSectionSubtitle.textContent = "Select whether to sign in using Gmail/GitHub or Email and Password.";
-    if (els.oauthSectionTitle) els.oauthSectionTitle.textContent = "Sign In using Gmail or GitHub";
+    if (els.authFormSectionTitle) els.authFormSectionTitle.textContent = "Sign In";
+    if (els.authFormSectionSubtitle) els.authFormSectionSubtitle.textContent = "Access your private shared sanctuary.";
+    if (els.emailSubmitButton) els.emailSubmitButton.textContent = "Sign In";
     if (els.oauthGoogleButtonLabel) els.oauthGoogleButtonLabel.textContent = "Sign In with Google";
     if (els.oauthGithubButtonLabel) els.oauthGithubButtonLabel.textContent = "Sign In with GitHub";
-    if (els.emailSectionTitle) els.emailSectionTitle.textContent = "Sign In with Email & Password";
-    if (els.emailSubmitButton) els.emailSubmitButton.textContent = "Sign In";
     if (els.authFooterPrompt) els.authFooterPrompt.textContent = "Don't have an account yet?";
     if (els.authFooterToggleBtn) els.authFooterToggleBtn.textContent = "Create Account";
   } else {
-    if (els.authFormSectionTitle) els.authFormSectionTitle.textContent = "Create an Account";
-    if (els.authFormSectionSubtitle) els.authFormSectionSubtitle.textContent = "Select whether to create your account using Gmail/GitHub or Email and Password.";
-    if (els.oauthSectionTitle) els.oauthSectionTitle.textContent = "Create Account using Gmail or GitHub";
-    if (els.oauthGoogleButtonLabel) els.oauthGoogleButtonLabel.textContent = "Create Account with Google";
-    if (els.oauthGithubButtonLabel) els.oauthGithubButtonLabel.textContent = "Create Account with GitHub";
-    if (els.emailSectionTitle) els.emailSectionTitle.textContent = "Create Account with Email & Password";
+    if (els.authFormSectionTitle) els.authFormSectionTitle.textContent = "Create Account";
+    if (els.authFormSectionSubtitle) els.authFormSectionSubtitle.textContent = "Join your private shared sanctuary.";
     if (els.emailSubmitButton) els.emailSubmitButton.textContent = "Create Account";
+    if (els.oauthGoogleButtonLabel) els.oauthGoogleButtonLabel.textContent = "Sign In with Google";
+    if (els.oauthGithubButtonLabel) els.oauthGithubButtonLabel.textContent = "Sign In with GitHub";
     if (els.authFooterPrompt) els.authFooterPrompt.textContent = "Already have an account?";
     if (els.authFooterToggleBtn) els.authFooterToggleBtn.textContent = "Sign In";
   }
@@ -1124,7 +1060,7 @@ async function handleOAuthFlow(provider, isSignUp = false) {
             els.oauthWarningText.innerHTML = `<strong>${providerName} OAuth is not enabled in your Supabase project yet.</strong><br>To enable it, open your Supabase Dashboard &gt; <em>Authentication &gt; Providers &gt; ${providerName}</em> and enter OAuth credentials. In the meantime, you can create or sign in with an <strong>Email &amp; Password</strong> below.`;
           }
         }
-        setAuthMethod("email");
+        els.authEmailInput?.focus();
         return;
       }
     }
