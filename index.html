@@ -29,11 +29,15 @@
           }
           if (isOAuth || hasToken) {
             document.documentElement.classList.add('is-authenticated');
+            document.addEventListener('DOMContentLoaded', function() {
+              var tabTxt = document.getElementById('signinTabButtonText');
+              if (tabTxt) tabTxt.textContent = 'Profile';
+            });
           }
         } catch(e) {}
       })();
     </script>
-    <link rel="stylesheet" href="style.css?v=20261120-02" />
+    <link rel="stylesheet" href="style.css?v=20261120-03" />
   </head>
   <body class="theme-me">
     <main class="app-shell" id="appShell">
@@ -44,15 +48,15 @@
         <!-- Authentication Header Card -->
         <article class="hero-card visual-container auth-hero-card">
           <div class="title-block" style="text-align: center;">
-            <p class="eyebrow">Private Shared Sanctuary</p>
+            <p class="eyebrow" id="signinEyebrow">Private Shared Sanctuary</p>
             <h1 id="signinTitle">Sign In to Cozy Space</h1>
-            <p class="subtitle">Access your shared space for milestones, memories, and real-time notes.</p>
+            <p class="subtitle" id="signinSubtitle">Access your shared space for milestones, memories, and real-time notes.</p>
           </div>
         </article>
 
         <!-- Authentication Panel -->
         <article class="panel auth-panel">
-          <div class="panel-kicker">Account Access</div>
+          <div class="panel-kicker" id="authPanelKicker">Account Access</div>
 
           <!-- When Logged Out: Streamlined Single Auth Flow -->
           <div id="authLoggedOutSection">
@@ -115,16 +119,43 @@
           <!-- When Logged In: Profile Card -->
           <div id="authLoggedInSection" hidden>
             <div class="auth-profile-card">
-              <div class="auth-avatar" id="authProfileAvatar">F</div>
+              <div class="auth-avatar" id="authProfileAvatar">C</div>
               <div class="auth-profile-details">
                 <strong id="authProfileEmail">user@example.com</strong>
-                <span class="auth-profile-status" id="authProfileThemeTag">Rose Velvet Aesthetic Active</span>
-                <span class="auth-profile-partner" id="authProfilePartnerTag">Partner: Waiting for invite (1/2)</span>
+                <span class="auth-profile-badge">
+                  <span class="auth-status-dot"></span> Active Session &bull; Supabase Cloud
+                </span>
               </div>
             </div>
-            <div class="auth-actions" style="margin-top: 14px;">
+
+            <!-- Profile Info Grid -->
+            <div class="profile-info-grid">
+              <div class="profile-info-item">
+                <span class="profile-info-label">Active Atmosphere</span>
+                <strong class="profile-info-val" id="authProfileThemeTag">Rose Velvet Active</strong>
+                <span class="profile-info-sub">Customizable in Settings</span>
+              </div>
+              <div class="profile-info-item">
+                <span class="profile-info-label">Partner Connection</span>
+                <strong class="profile-info-val" id="authProfilePartnerTag">Partner: Waiting for invite (1/2)</strong>
+                <span class="profile-info-sub" id="authProfileSpaceTag">Personal Shared Sanctuary</span>
+              </div>
+              <div class="profile-info-item">
+                <span class="profile-info-label">Affection Shared</span>
+                <strong class="profile-info-val" id="authProfileHugsTag">0 hugs sent</strong>
+                <span class="profile-info-sub">Real-time interaction</span>
+              </div>
+              <div class="profile-info-item">
+                <span class="profile-info-label">Account Security</span>
+                <strong class="profile-info-val" id="authProfileProviderTag">Verified Authentication</strong>
+                <span class="profile-info-sub">Protected &amp; Encrypted</span>
+              </div>
+            </div>
+
+            <div class="auth-actions" style="margin-top: 18px; display: flex; flex-direction: column; gap: 10px;">
               <button class="soft-button" id="authGoToMainButton" type="button">Access Main Space</button>
-              <button class="ghost-button" id="authSignOutButton" type="button">Sign Out</button>
+              <button class="ghost-button" id="authGoToSettingsButton" type="button">Customize Theme &amp; Settings</button>
+              <button class="ghost-button auth-signout-btn" id="authSignOutButton" type="button">Sign Out</button>
             </div>
           </div>
 
@@ -147,13 +178,6 @@
             <p class="eyebrow">Private Space for Two</p>
             <h1 id="dashboardTitle">Cozy Space</h1>
             <p class="subtitle">A shared sanctuary for connection, milestones, and real-time notes.</p>
-          </div>
-
-          <!-- Clean Metrics -->
-          <!-- Quick Aesthetic Theme Switcher -->
-          <div class="quick-theme-bar" id="quickThemeBar">
-            <span class="quick-theme-label">Palette:</span>
-            <div class="quick-theme-scroll" id="quickThemeScroll" role="radiogroup" aria-label="Quick palette options"></div>
           </div>
 
           <div class="hug-card" aria-live="polite">
@@ -466,7 +490,7 @@
     </nav>
 
     <div class="particle-layer" id="particleLayer" aria-hidden="true"></div>
-    <script src="supabase.js?v=20261120-02"></script>
-    <script src="app.js?v=20261120-02"></script>
+    <script src="supabase.js?v=20261120-03"></script>
+    <script src="app.js?v=20261120-03"></script>
   </body>
 </html>

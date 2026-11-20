@@ -16,6 +16,27 @@ const HAS_SAVED_AUTH =
     (k) => k.startsWith("sb-") && k.endsWith("-auth-token")
   );
 
+function getSavedUserFromStorage() {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("sb-") && k.endsWith("-auth-token")) {
+        const raw = localStorage.getItem(k);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && (parsed.user || parsed.currentSession?.user)) {
+            return parsed.user || parsed.currentSession?.user;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Could not read stored user:", e);
+  }
+  return null;
+}
+
 let supabaseClient = null;
 
 async function ensureSupabaseClient() {
@@ -191,14 +212,18 @@ const els = {
   partnerStatusLabel: document.querySelector("#partnerStatusLabel"),
   openSettingsModalButton: document.querySelector("#openSettingsModalButton"),
 
-  // Sign In Tab Sections
+  // Sign In / Profile Tab Sections
   authLoggedOutSection: document.querySelector("#authLoggedOutSection"),
   authLoggedInSection: document.querySelector("#authLoggedInSection"),
   authProfileAvatar: document.querySelector("#authProfileAvatar"),
   authProfileEmail: document.querySelector("#authProfileEmail"),
   authProfileThemeTag: document.querySelector("#authProfileThemeTag"),
   authProfilePartnerTag: document.querySelector("#authProfilePartnerTag"),
+  authProfileSpaceTag: document.querySelector("#authProfileSpaceTag"),
+  authProfileHugsTag: document.querySelector("#authProfileHugsTag"),
+  authProfileProviderTag: document.querySelector("#authProfileProviderTag"),
   authGoToMainButton: document.querySelector("#authGoToMainButton"),
+  authGoToSettingsButton: document.querySelector("#authGoToSettingsButton"),
   authSignOutButton: document.querySelector("#authSignOutButton"),
   signinTabButtonText: document.querySelector("#signinTabButtonText"),
 
@@ -207,7 +232,10 @@ const els = {
   authModalCloseButtons: document.querySelectorAll("[data-close-auth-modal]"),
   genderFemaleButton: document.querySelector("#genderFemaleButton"),
   genderMaleButton: document.querySelector("#genderMaleButton"),
+  signinEyebrow: document.querySelector("#signinEyebrow"),
   signinTitle: document.querySelector("#signinTitle"),
+  signinSubtitle: document.querySelector("#signinSubtitle"),
+  authPanelKicker: document.querySelector("#authPanelKicker"),
   authFormSectionTitle: document.querySelector("#authFormSectionTitle"),
   authFormSectionSubtitle: document.querySelector("#authFormSectionSubtitle"),
   googleAuthButton: document.querySelector("#googleAuthButton"),
@@ -326,6 +354,11 @@ function loadLocalState() {
   ]);
   state.plans = readJson(STORAGE_KEYS.plans, []);
   state.dailyPhotoDataUrl = localStorage.getItem(STORAGE_KEYS.photo) || "";
+
+  const savedUser = getSavedUserFromStorage();
+  if (savedUser) {
+    state.user = savedUser;
+  }
 }
 
 function wireUiEvents() {
@@ -362,6 +395,7 @@ function wireUiEvents() {
   els.emailAuthForm?.addEventListener("submit", handleEmailFormSubmit);
 
   els.authGoToMainButton?.addEventListener("click", () => setActiveView("dashboard"));
+  els.authGoToSettingsButton?.addEventListener("click", () => setActiveView("settings"));
   els.authSignOutButton?.addEventListener("click", handleSignOut);
 
   // Settings Tab & Partner Invite Events
@@ -373,7 +407,6 @@ function wireUiEvents() {
   els.testHapticsButton?.addEventListener("click", testHapticVibration);
   els.settingsThemeFemaleButton?.addEventListener("click", () => setGender("female"));
   els.settingsThemeMaleButton?.addEventListener("click", () => setGender("male"));
-  els.settingsSignOutButton?.addEventListener("click", handleSignOut);
   els.settingsSignOutButton?.addEventListener("click", handleSignOut);
 
   // Join Modal
@@ -581,25 +614,7 @@ function setTheme(theme) {
 function renderThemeGalleries() {
   const currentId = resolvePaletteId(state.activeTheme || state.gender || "rose-velvet");
 
-  // 1. Render Quick Theme chips in dashboard hero card
-  if (els.quickThemeScroll) {
-    els.quickThemeScroll.innerHTML = PALETTE_THEMES.map((p) => {
-      const isActive = p.id === currentId;
-      return `<button class="quick-theme-chip${isActive ? " is-active" : ""}" type="button" data-palette-id="${p.id}" role="radio" aria-checked="${isActive}" title="${p.name} (${p.subtitle})">
-        <span class="quick-theme-chip-dot" style="background:${p.primary};"></span>
-        <span>${p.name}</span>
-      </button>`;
-    }).join("");
-
-    els.quickThemeScroll.querySelectorAll(".quick-theme-chip").forEach((chip) => {
-      chip.addEventListener("click", () => {
-        soundEngine.playTone(580, 0.2);
-        setPalette(chip.dataset.paletteId);
-      });
-    });
-  }
-
-  // 2. Render Settings Theme Gallery
+  // Render Settings Theme Gallery (theme customizer belongs strictly in Settings)
   if (els.settingsThemeGallery) {
     els.settingsThemeGallery.innerHTML = PALETTE_THEMES.map((p) => {
       const isActive = p.id === currentId;
@@ -825,12 +840,29 @@ function updateAuthTabUi() {
 
   updateThemeBanner(palette);
 
-  if (state.user) {
-    if (els.authLoggedOutSection) els.authLoggedOutSection.hidden = true;
-    if (els.authLoggedInSection) els.authLoggedInSection.hidden = false;
-    if (els.authProfileEmail) els.authProfileEmail.textContent = state.user.email || "Active User";
+  const isAuthenticated = !!state.user || HAS_SAVED_AUTH || document.documentElement.classList.contains("is-authenticated");
+
+  if (isAuthenticated) {
+    if (els.signinTabButtonText) els.signinTabButtonText.textContent = "Profile";
+    if (els.signinEyebrow) els.signinEyebrow.textContent = "Your Sanctuary Profile";
+    if (els.signinTitle) els.signinTitle.textContent = "Your Profile";
+    if (els.signinSubtitle) els.signinSubtitle.textContent = "Personal account details, connected partner space, and active session.";
+    if (els.authPanelKicker) els.authPanelKicker.textContent = "Profile Overview";
+
+    if (els.authLoggedOutSection) {
+      els.authLoggedOutSection.hidden = true;
+      els.authLoggedOutSection.style.display = "none";
+    }
+    if (els.authLoggedInSection) {
+      els.authLoggedInSection.hidden = false;
+      els.authLoggedInSection.style.display = "block";
+    }
+
+    const email = state.user?.email || (state.user?.user_metadata?.email) || "Active User";
+    if (els.authProfileEmail) els.authProfileEmail.textContent = email;
     if (els.authProfileAvatar) {
-      els.authProfileAvatar.textContent = palette.name.substring(0, 2).toUpperCase();
+      const initial = (email !== "Active User" ? email.charAt(0) : palette.name.charAt(0)).toUpperCase();
+      els.authProfileAvatar.textContent = initial;
       els.authProfileAvatar.style.background = "linear-gradient(135deg, " + palette.bg + " 0%, " + palette.primary + " 100%)";
       els.authProfileAvatar.style.color = palette.dark ? "#fff" : "#1a1218";
     }
@@ -842,19 +874,37 @@ function updateAuthTabUi() {
         ? `Connected with ${state.partnerName}`
         : "Partner: Waiting for invite (1/2)";
     }
+    if (els.authProfileSpaceTag) {
+      els.authProfileSpaceTag.textContent = state.space?.name
+        ? state.space.name
+        : (state.space?.code ? `Space Code: ${state.space.code}` : "Personal Shared Sanctuary");
+    }
+    if (els.authProfileHugsTag) {
+      els.authProfileHugsTag.textContent = `${state.totalHugs || 0} hugs sent`;
+    }
+    if (els.authProfileProviderTag) {
+      const provider = state.user?.app_metadata?.provider || (email.includes("@gmail.com") ? "Google Account" : "Supabase Cloud");
+      els.authProfileProviderTag.textContent = provider.charAt(0).toUpperCase() + provider.slice(1);
+    }
+
     if (els.settingsAccountSummary) {
-      els.settingsAccountSummary.textContent = `Signed in as ${state.user.email} (Supabase Cloud connected)`;
+      els.settingsAccountSummary.textContent = `Signed in as ${email} (Supabase Cloud connected)`;
     }
     if (els.settingsSignOutButton) els.settingsSignOutButton.hidden = false;
-    if (els.signinTabButtonText) els.signinTabButtonText.textContent = "Account";
   } else {
-    if (els.authLoggedOutSection) els.authLoggedOutSection.hidden = false;
-    if (els.authLoggedInSection) els.authLoggedInSection.hidden = true;
+    if (els.signinTabButtonText) els.signinTabButtonText.textContent = "Sign In";
+    if (els.authLoggedOutSection) {
+      els.authLoggedOutSection.hidden = false;
+      els.authLoggedOutSection.style.display = "block";
+    }
+    if (els.authLoggedInSection) {
+      els.authLoggedInSection.hidden = true;
+      els.authLoggedInSection.style.display = "none";
+    }
     if (els.settingsAccountSummary) {
       els.settingsAccountSummary.textContent = "Not signed in (Local preview mode)";
     }
     if (els.settingsSignOutButton) els.settingsSignOutButton.hidden = true;
-    if (els.signinTabButtonText) els.signinTabButtonText.textContent = "Sign In";
     renderAuthSections();
   }
 }
@@ -865,10 +915,15 @@ function setAuthMode(mode) {
 }
 
 function renderAuthSections() {
+  if (state.user || document.documentElement.classList.contains("is-authenticated")) return;
   const isSignIn = state.authMode === "signin";
+
+  if (els.signinEyebrow) els.signinEyebrow.textContent = "Private Shared Sanctuary";
+  if (els.authPanelKicker) els.authPanelKicker.textContent = "Account Access";
 
   if (isSignIn) {
     if (els.signinTitle) els.signinTitle.textContent = "Sign In to Cozy Space";
+    if (els.signinSubtitle) els.signinSubtitle.textContent = "Access your shared space for milestones, memories, and real-time notes.";
     if (els.authFormSectionTitle) els.authFormSectionTitle.textContent = "Sign In";
     if (els.authFormSectionSubtitle) els.authFormSectionSubtitle.textContent = "Access your private shared sanctuary.";
     if (els.emailSubmitButton) els.emailSubmitButton.textContent = "Sign In";
@@ -878,6 +933,7 @@ function renderAuthSections() {
     if (els.authFooterToggleBtn) els.authFooterToggleBtn.textContent = "Create Account";
   } else {
     if (els.signinTitle) els.signinTitle.textContent = "Create an Account";
+    if (els.signinSubtitle) els.signinSubtitle.textContent = "Join your private shared sanctuary for two.";
     if (els.authFormSectionTitle) els.authFormSectionTitle.textContent = "Create Account";
     if (els.authFormSectionSubtitle) els.authFormSectionSubtitle.textContent = "Join your private shared sanctuary.";
     if (els.emailSubmitButton) els.emailSubmitButton.textContent = "Create Account";
@@ -1285,6 +1341,7 @@ async function handleSignOut() {
   state.profile = null;
   state.space = null;
   state.partnerName = "Partner";
+  if (els.signinTabButtonText) els.signinTabButtonText.textContent = "Sign In";
   setActiveView("signin");
   updateUserBadge();
   updatePartnerBadge();

@@ -405,6 +405,20 @@ html.is-authenticated #bottomTabs {
   display: grid !important;
 }
 
+/* Auth View state switching between Profile and Login Form */
+html.is-authenticated #authLoggedOutSection {
+  display: none !important;
+}
+html.is-authenticated #authLoggedInSection {
+  display: block !important;
+}
+html:not(.is-authenticated) #authLoggedOutSection {
+  display: block !important;
+}
+html:not(.is-authenticated) #authLoggedInSection {
+  display: none !important;
+}
+
 /* When authenticated: by default show dashboard unless another view is explicitly active */
 html.is-authenticated:not(.view-signin-active):not(.view-settings-active) #signinView {
   display: none !important;
@@ -2280,80 +2294,84 @@ h2 {
 }
 
 /* ========================================================
-   Quick Aesthetic Switcher (Dashboard View)
+   User Profile View Details
    ======================================================== */
-.quick-theme-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 18px;
-  background: var(--color-card);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  margin-bottom: 14px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-primary-soft) transparent;
-}
-
-.quick-theme-bar::-webkit-scrollbar {
-  height: 3px;
-}
-.quick-theme-bar::-webkit-scrollbar-thumb {
-  background: var(--color-primary-soft);
-  border-radius: 3px;
-}
-
-.quick-theme-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--color-muted);
-  font-weight: 700;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.quick-theme-scroll {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-}
-
-.quick-theme-chip {
+.auth-profile-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 11px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.2);
-  color: var(--color-ink);
   font-size: 0.78rem;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 160ms ease;
-  user-select: none;
-}
-
-.quick-theme-chip:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.quick-theme-chip.is-active {
-  border-color: var(--color-primary);
-  background: var(--color-primary-soft);
-  box-shadow: 0 0 10px var(--interactive-glow);
+  color: var(--color-primary);
   font-weight: 600;
+  margin-top: 2px;
 }
 
-.quick-theme-chip-dot {
-  width: 9px;
-  height: 9px;
+.auth-status-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
   flex-shrink: 0;
+}
+
+.profile-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+@media (max-width: 480px) {
+  .profile-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.profile-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profile-info-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+
+.profile-info-val {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  line-height: 1.25;
+}
+
+.profile-info-sub {
+  font-size: 0.73rem;
+  color: var(--color-muted);
+}
+
+.auth-signout-btn {
+  border: 1px solid rgba(239, 68, 68, 0.28) !important;
+  color: #f87171 !important;
+  transition: all 160ms ease;
+}
+
+.auth-signout-btn:hover {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(239, 68, 68, 0.55) !important;
+  color: #fca5a5 !important;
+}
+
+.quick-theme-bar {
+  display: none !important;
 }
 
 /* ========================================================
