@@ -113,7 +113,7 @@ const STORAGE_KEYS = {
   spaceId: "cozy-space-space-id",
 };
 
-const savedGender = localStorage.getItem(STORAGE_KEYS.gender) || "rose-velvet";
+const savedGender = localStorage.getItem(STORAGE_KEYS.theme) || localStorage.getItem(STORAGE_KEYS.gender) || "rose-velvet";
 const savedHaptics = localStorage.getItem(STORAGE_KEYS.haptics) !== "false";
 const savedSpaceId = localStorage.getItem(STORAGE_KEYS.spaceId) || DEFAULT_SPACE_ID;
 
@@ -325,6 +325,7 @@ async function init() {
   wireUiEvents();
   renderThemeGalleries();
   setPalette(state.gender);
+  setConnectionStatus(true);
   updateHapticsUi();
   updatePartnerBadge();
   window.setInterval(renderRelationshipDates, 60 * 1000);
@@ -466,22 +467,262 @@ function wireUiEvents() {
 // -------------------------------------------------------------
 
 const PALETTE_THEMES = [
-  { id: "soft-linen",      name: "Soft Linen",         subtitle: "Soft Linen & Cherry Blossom",  bg: "#F5F1E6", primary: "#F9A8BB", dark: false },
-  { id: "espresso-peony",  name: "Espresso Peony",     subtitle: "Espresso & Peony",             bg: "#3E2723", primary: "#F4C9D6", dark: true  },
-  { id: "lavender-blush",  name: "Lavender Blush",     subtitle: "Lavender Blush & Blush",       bg: "#FFE6ED", primary: "#CF7486", dark: false },
-  { id: "cherry-twilight", name: "Cherry Twilight",    subtitle: "Cherry Blossom & Deep Twilight",bg: "#F9A8BB", primary: "#1A1265", dark: false },
-  { id: "rich-mahogany",   name: "Rich Mahogany",      subtitle: "Parchment & Rich Mahogany",    bg: "#EEEDE9", primary: "#371B17", dark: false },
-  { id: "thistle-mocha",   name: "Thistle Mocha",      subtitle: "Thistle & Deep Mocha",         bg: "#D6C8DF", primary: "#332927", dark: false },
-  { id: "morning-butter",  name: "Morning Butter",     subtitle: "Blue Grey & Morning Butter",   bg: "#7298C7", primary: "#F3D98F", dark: true  },
-  { id: "hunter-green",    name: "Hunter Green",       subtitle: "Hunter Green & Sand Dune",     bg: "#3E5F44", primary: "#DDD6B9", dark: true  },
-  { id: "berry-blush",     name: "Berry Blush",        subtitle: "Berry Blush & Petal Frost",    bg: "#974472", primary: "#FEDDE8", dark: true  },
-  { id: "blue-slate",      name: "Nordic Slate",       subtitle: "Icy Blue & Blue Slate",        bg: "#B3D1ED", primary: "#516171", dark: false },
-  { id: "shadow-grey",     name: "Shadow Grey",        subtitle: "Shadow Grey & Sandy Clay",     bg: "#272727", primary: "#D4AA7D", dark: true  },
-  { id: "twilight-indigo", name: "Twilight Indigo",    subtitle: "Powder Petal & Twilight",      bg: "#F9DEC9", primary: "#3A405A", dark: false },
-  { id: "burgundy",        name: "Antique Burgundy",   subtitle: "Antique White & Burgundy",     bg: "#F7E6D2", primary: "#90202C", dark: false },
-  { id: "burnt-peach",     name: "Burnt Peach",        subtitle: "Eggshell & Burnt Peach",       bg: "#F4F1DE", primary: "#E07A5F", dark: false },
-  { id: "rose-velvet",     name: "Rose Velvet",        subtitle: "Dark Wine & Soft Rose",        bg: "#2e1e1f", primary: "#e30b5c", dark: true  },
-  { id: "nordic-frost",    name: "Nordic Frost",       subtitle: "Charcoal & Ice Blue",          bg: "#35393C", primary: "#A4D8FF", dark: true  },
+  {
+    id: "soft-linen",
+    name: "Soft Linen",
+    subtitle: "Soft Linen & Cherry Blossom",
+    bg: "#F5F1E6",
+    primary: "#F9A8BB",
+    primaryDeep: "#d9778c",
+    primarySoft: "rgba(249, 168, 187, 0.22)",
+    ink: "#2b141d",
+    muted: "#6d4955",
+    cardBg: "rgba(255, 255, 255, 0.86)",
+    cardBorder: "rgba(249, 168, 187, 0.4)",
+    buttonText: "#2b141d",
+    glow: "rgba(249, 168, 187, 0.45)",
+    dark: false,
+  },
+  {
+    id: "espresso-peony",
+    name: "Espresso Peony",
+    subtitle: "Espresso & Peony",
+    bg: "#3E2723",
+    primary: "#F4C9D6",
+    primaryDeep: "#d99eb0",
+    primarySoft: "rgba(244, 201, 214, 0.2)",
+    ink: "#fbeeef",
+    muted: "#c5a7b0",
+    cardBg: "rgba(45, 28, 25, 0.88)",
+    cardBorder: "rgba(244, 201, 214, 0.25)",
+    buttonText: "#3E2723",
+    glow: "rgba(244, 201, 214, 0.35)",
+    dark: true,
+  },
+  {
+    id: "lavender-blush",
+    name: "Lavender Blush",
+    subtitle: "Lavender Blush & Blush",
+    bg: "#FFE6ED",
+    primary: "#CF7486",
+    primaryDeep: "#9e4b5c",
+    primarySoft: "rgba(207, 116, 134, 0.2)",
+    ink: "#36151e",
+    muted: "#704852",
+    cardBg: "rgba(255, 255, 255, 0.86)",
+    cardBorder: "rgba(207, 116, 134, 0.35)",
+    buttonText: "#ffffff",
+    glow: "rgba(207, 116, 134, 0.35)",
+    dark: false,
+  },
+  {
+    id: "cherry-twilight",
+    name: "Cherry Twilight",
+    subtitle: "Cherry Blossom & Deep Twilight",
+    bg: "#F9A8BB",
+    primary: "#1A1265",
+    primaryDeep: "#100a45",
+    primarySoft: "rgba(26, 18, 101, 0.18)",
+    ink: "#1A1265",
+    muted: "#433878",
+    cardBg: "rgba(255, 255, 255, 0.86)",
+    cardBorder: "rgba(26, 18, 101, 0.3)",
+    buttonText: "#ffffff",
+    glow: "rgba(26, 18, 101, 0.35)",
+    dark: false,
+  },
+  {
+    id: "rich-mahogany",
+    name: "Rich Mahogany",
+    subtitle: "Parchment & Rich Mahogany",
+    bg: "#EEEDE9",
+    primary: "#371B17",
+    primaryDeep: "#200f0d",
+    primarySoft: "rgba(55, 27, 23, 0.16)",
+    ink: "#371B17",
+    muted: "#664945",
+    cardBg: "rgba(255, 255, 255, 0.88)",
+    cardBorder: "rgba(55, 27, 23, 0.25)",
+    buttonText: "#ffffff",
+    glow: "rgba(55, 27, 23, 0.3)",
+    dark: false,
+  },
+  {
+    id: "thistle-mocha",
+    name: "Thistle Mocha",
+    subtitle: "Thistle & Deep Mocha",
+    bg: "#D6C8DF",
+    primary: "#332927",
+    primaryDeep: "#1f1817",
+    primarySoft: "rgba(51, 41, 39, 0.18)",
+    ink: "#332927",
+    muted: "#5e4e54",
+    cardBg: "rgba(255, 255, 255, 0.86)",
+    cardBorder: "rgba(51, 41, 39, 0.25)",
+    buttonText: "#ffffff",
+    glow: "rgba(51, 41, 39, 0.3)",
+    dark: false,
+  },
+  {
+    id: "morning-butter",
+    name: "Morning Butter",
+    subtitle: "Blue Grey & Morning Butter",
+    bg: "#F3D98F",
+    primary: "#446B9E",
+    primaryDeep: "#2b4b73",
+    primarySoft: "rgba(68, 107, 158, 0.2)",
+    ink: "#1a2e47",
+    muted: "#4f6075",
+    cardBg: "rgba(255, 255, 255, 0.88)",
+    cardBorder: "rgba(68, 107, 158, 0.3)",
+    buttonText: "#ffffff",
+    glow: "rgba(68, 107, 158, 0.35)",
+    dark: false,
+  },
+  {
+    id: "hunter-green",
+    name: "Hunter Green",
+    subtitle: "Hunter Green & Sand Dune",
+    bg: "#3E5F44",
+    primary: "#DDD6B9",
+    primaryDeep: "#c5bd9b",
+    primarySoft: "rgba(221, 214, 185, 0.2)",
+    ink: "#f5f1de",
+    muted: "#cbd4bd",
+    cardBg: "rgba(38, 62, 42, 0.88)",
+    cardBorder: "rgba(221, 214, 185, 0.25)",
+    buttonText: "#253d29",
+    glow: "rgba(221, 214, 185, 0.35)",
+    dark: true,
+  },
+  {
+    id: "berry-blush",
+    name: "Berry Blush",
+    subtitle: "Berry Blush & Petal Frost",
+    bg: "#974472",
+    primary: "#FEDDE8",
+    primaryDeep: "#e8b9cb",
+    primarySoft: "rgba(254, 221, 232, 0.22)",
+    ink: "#fff2f7",
+    muted: "#f5c9dc",
+    cardBg: "rgba(110, 44, 82, 0.88)",
+    cardBorder: "rgba(254, 221, 232, 0.28)",
+    buttonText: "#5e1e42",
+    glow: "rgba(254, 221, 232, 0.35)",
+    dark: true,
+  },
+  {
+    id: "blue-slate",
+    name: "Nordic Slate",
+    subtitle: "Icy Blue & Blue Slate",
+    bg: "#B3D1ED",
+    primary: "#516171",
+    primaryDeep: "#374552",
+    primarySoft: "rgba(81, 97, 113, 0.2)",
+    ink: "#1c2b38",
+    muted: "#4a5c6e",
+    cardBg: "rgba(255, 255, 255, 0.86)",
+    cardBorder: "rgba(81, 97, 113, 0.3)",
+    buttonText: "#ffffff",
+    glow: "rgba(81, 97, 113, 0.35)",
+    dark: false,
+  },
+  {
+    id: "shadow-grey",
+    name: "Shadow Grey",
+    subtitle: "Shadow Grey & Sandy Clay",
+    bg: "#272727",
+    primary: "#D4AA7D",
+    primaryDeep: "#b58c5f",
+    primarySoft: "rgba(212, 170, 125, 0.2)",
+    ink: "#faede0",
+    muted: "#c7b39d",
+    cardBg: "rgba(45, 45, 45, 0.9)",
+    cardBorder: "rgba(212, 170, 125, 0.25)",
+    buttonText: "#272727",
+    glow: "rgba(212, 170, 125, 0.35)",
+    dark: true,
+  },
+  {
+    id: "twilight-indigo",
+    name: "Twilight Indigo",
+    subtitle: "Powder Petal & Twilight",
+    bg: "#F9DEC9",
+    primary: "#3A405A",
+    primaryDeep: "#24283b",
+    primarySoft: "rgba(58, 64, 90, 0.2)",
+    ink: "#252b40",
+    muted: "#5f667d",
+    cardBg: "rgba(255, 255, 255, 0.86)",
+    cardBorder: "rgba(58, 64, 90, 0.28)",
+    buttonText: "#ffffff",
+    glow: "rgba(58, 64, 90, 0.35)",
+    dark: false,
+  },
+  {
+    id: "burgundy",
+    name: "Antique Burgundy",
+    subtitle: "Antique White & Burgundy",
+    bg: "#F7E6D2",
+    primary: "#90202C",
+    primaryDeep: "#66121b",
+    primarySoft: "rgba(144, 32, 44, 0.18)",
+    ink: "#3d080e",
+    muted: "#7a3841",
+    cardBg: "rgba(255, 255, 255, 0.88)",
+    cardBorder: "rgba(144, 32, 44, 0.3)",
+    buttonText: "#ffffff",
+    glow: "rgba(144, 32, 44, 0.35)",
+    dark: false,
+  },
+  {
+    id: "burnt-peach",
+    name: "Burnt Peach",
+    subtitle: "Eggshell & Burnt Peach",
+    bg: "#F4F1DE",
+    primary: "#E07A5F",
+    primaryDeep: "#b5563c",
+    primarySoft: "rgba(224, 122, 95, 0.22)",
+    ink: "#381a13",
+    muted: "#7d4f44",
+    cardBg: "rgba(255, 255, 255, 0.86)",
+    cardBorder: "rgba(224, 122, 95, 0.3)",
+    buttonText: "#ffffff",
+    glow: "rgba(224, 122, 95, 0.35)",
+    dark: false,
+  },
+  {
+    id: "rose-velvet",
+    name: "Rose Velvet",
+    subtitle: "Dark Wine & Soft Rose",
+    bg: "#2e1e1f",
+    primary: "#e30b5c",
+    primaryDeep: "#910a3d",
+    primarySoft: "rgba(227, 11, 92, 0.2)",
+    ink: "#fbf7f4",
+    muted: "#dfc4c9",
+    cardBg: "rgba(255, 255, 255, 0.08)",
+    cardBorder: "rgba(227, 11, 92, 0.28)",
+    buttonText: "#ffffff",
+    glow: "rgba(227, 11, 92, 0.35)",
+    dark: true,
+  },
+  {
+    id: "nordic-frost",
+    name: "Nordic Frost",
+    subtitle: "Charcoal & Ice Blue",
+    bg: "#35393C",
+    primary: "#A4D8FF",
+    primaryDeep: "#68b0e8",
+    primarySoft: "rgba(164, 216, 255, 0.2)",
+    ink: "#eaf4fc",
+    muted: "#b2c5d4",
+    cardBg: "rgba(255, 255, 255, 0.08)",
+    cardBorder: "rgba(164, 216, 255, 0.28)",
+    buttonText: "#1c2e3d",
+    glow: "rgba(164, 216, 255, 0.35)",
+    dark: true,
+  },
 ];
 
 const THEME_ALIASES = {
@@ -613,6 +854,43 @@ function applyPaletteToBody(palette) {
     document.body.classList.add("theme-cherry-blossom");
   } else if (palette.id === "espresso-peony") {
     document.body.classList.add("theme-espresso");
+  }
+
+  // Set CSS custom properties directly on root for 100% reliable instant theme synchronization
+  const root = document.documentElement;
+  root.setAttribute("data-theme", palette.id);
+  root.style.setProperty("--color-bg", palette.bg);
+  root.style.setProperty("--color-primary", palette.primary);
+  root.style.setProperty("--color-primary-deep", palette.primaryDeep);
+  root.style.setProperty("--color-primary-soft", palette.primarySoft);
+  root.style.setProperty("--color-ink", palette.ink);
+  root.style.setProperty("--color-muted", palette.muted);
+  root.style.setProperty("--color-card", palette.cardBg);
+  root.style.setProperty("--color-card-border", palette.cardBorder);
+  root.style.setProperty("--color-button-text", palette.buttonText);
+  root.style.setProperty("--interactive-glow", palette.glow);
+  root.style.setProperty("--surface-soft", palette.primarySoft);
+  root.style.setProperty("--hero-card-accent", palette.primarySoft);
+
+  if (palette.dark) {
+    root.style.setProperty(
+      "--body-background",
+      `radial-gradient(circle at 18% 8%, ${palette.primarySoft}, transparent 22rem), linear-gradient(160deg, ${palette.bg}, #121214)`
+    );
+    root.style.setProperty("--hero-card-bg", "rgba(0, 0, 0, 0.24)");
+    root.style.setProperty("--bottom-bar-bg", "rgba(22, 22, 24, 0.92)");
+  } else {
+    root.style.setProperty(
+      "--body-background",
+      `radial-gradient(circle at 18% 8%, ${palette.primarySoft}, transparent 22rem), linear-gradient(160deg, ${palette.bg}, #fdfbf7)`
+    );
+    root.style.setProperty("--hero-card-bg", palette.cardBg);
+    root.style.setProperty("--bottom-bar-bg", "rgba(255, 255, 255, 0.92)");
+  }
+
+  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+  if (metaThemeColor) {
+    metaThemeColor.setAttribute("content", palette.bg);
   }
 
   if (els.userThemeSwatch) {
@@ -1725,12 +2003,15 @@ async function initSupabase() {
 
 function setConnectionStatus(isLive) {
   state.isLive = isLive;
+  if (!els.connectionStatus) return;
   if (isLive) {
     els.connectionStatus.textContent = "Live connected";
-    els.connectionStatus.classList.add("is-live");
+    els.connectionStatus.classList.add("is-connected", "is-live");
+    els.connectionStatus.classList.remove("is-offline");
   } else {
-    els.connectionStatus.textContent = "Local offline";
-    els.connectionStatus.classList.remove("is-live");
+    els.connectionStatus.textContent = "Connected";
+    els.connectionStatus.classList.add("is-connected");
+    els.connectionStatus.classList.remove("is-live", "is-offline");
   }
 }
 

@@ -8,6 +8,10 @@
     <script>
       (function() {
         try {
+          var savedTheme = localStorage.getItem('cozy-space-active-theme') || localStorage.getItem('cozy-space-gender');
+          if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+          }
           var isOAuth = window.location.hash.indexOf('access_token') !== -1 ||
                         window.location.hash.indexOf('refresh_token') !== -1 ||
                         window.location.search.indexOf('code=') !== -1;
@@ -37,9 +41,9 @@
         } catch(e) {}
       })();
     </script>
-    <link rel="stylesheet" href="style.css?v=20261121-01" />
+    <link rel="stylesheet" href="style.css?v=20261121-02" />
   </head>
-  <body class="theme-me">
+  <body class="theme-rose-velvet">
     <main class="app-shell" id="appShell">
       <!-- ======================================================== -->
       <!-- VIEW 1: SIGN IN PAGE (SEEN FIRST UPON VISITING)          -->
@@ -170,7 +174,7 @@
         <!-- Hero Card with Hugs & Metrics -->
         <article class="hero-card visual-container" id="heroCard">
           <div class="status-row">
-            <span class="status-pill" id="connectionStatus">Connecting...</span>
+            <span class="status-pill is-connected" id="connectionStatus">Connected</span>
             <span class="date-chip" id="todayLabel">Today</span>
           </div>
 
@@ -555,7 +559,7 @@
     </nav>
 
     <div class="particle-layer" id="particleLayer" aria-hidden="true"></div>
-    <script src="supabase.js?v=20261121-01"></script>
-    <script src="app.js?v=20261121-01"></script>
+    <script src="supabase.js?v=20261121-02"></script>
+    <script src="app.js?v=20261121-02"></script>
   </body>
 </html>
