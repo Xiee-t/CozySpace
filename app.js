@@ -207,6 +207,7 @@ const els = {
   authModalCloseButtons: document.querySelectorAll("[data-close-auth-modal]"),
   genderFemaleButton: document.querySelector("#genderFemaleButton"),
   genderMaleButton: document.querySelector("#genderMaleButton"),
+  signinTitle: document.querySelector("#signinTitle"),
   authFormSectionTitle: document.querySelector("#authFormSectionTitle"),
   authFormSectionSubtitle: document.querySelector("#authFormSectionSubtitle"),
   googleAuthButton: document.querySelector("#googleAuthButton"),
@@ -867,6 +868,7 @@ function renderAuthSections() {
   const isSignIn = state.authMode === "signin";
 
   if (isSignIn) {
+    if (els.signinTitle) els.signinTitle.textContent = "Sign In to Cozy Space";
     if (els.authFormSectionTitle) els.authFormSectionTitle.textContent = "Sign In";
     if (els.authFormSectionSubtitle) els.authFormSectionSubtitle.textContent = "Access your private shared sanctuary.";
     if (els.emailSubmitButton) els.emailSubmitButton.textContent = "Sign In";
@@ -875,11 +877,12 @@ function renderAuthSections() {
     if (els.authFooterPrompt) els.authFooterPrompt.textContent = "Don't have an account yet?";
     if (els.authFooterToggleBtn) els.authFooterToggleBtn.textContent = "Create Account";
   } else {
+    if (els.signinTitle) els.signinTitle.textContent = "Create an Account";
     if (els.authFormSectionTitle) els.authFormSectionTitle.textContent = "Create Account";
     if (els.authFormSectionSubtitle) els.authFormSectionSubtitle.textContent = "Join your private shared sanctuary.";
     if (els.emailSubmitButton) els.emailSubmitButton.textContent = "Create Account";
-    if (els.oauthGoogleButtonLabel) els.oauthGoogleButtonLabel.textContent = "Sign In with Google";
-    if (els.oauthGithubButtonLabel) els.oauthGithubButtonLabel.textContent = "Sign In with GitHub";
+    if (els.oauthGoogleButtonLabel) els.oauthGoogleButtonLabel.textContent = "Create Account with Google";
+    if (els.oauthGithubButtonLabel) els.oauthGithubButtonLabel.textContent = "Create Account with GitHub";
     if (els.authFooterPrompt) els.authFooterPrompt.textContent = "Already have an account?";
     if (els.authFooterToggleBtn) els.authFooterToggleBtn.textContent = "Sign In";
   }

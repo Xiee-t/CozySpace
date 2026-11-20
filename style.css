@@ -955,8 +955,8 @@ h2 {
 }
 
 .soft-button {
-  color: var(--color-primary-deep);
-  background: linear-gradient(135deg, rgba(0,0,0,0.06), var(--color-primary));
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(0,0,0,0.1), var(--color-primary));
   box-shadow: 0 10px 20px var(--interactive-glow);
 }
 
