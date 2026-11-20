@@ -466,22 +466,22 @@ function wireUiEvents() {
 // -------------------------------------------------------------
 
 const PALETTE_THEMES = [
-  { id: "rose-velvet",    name: "Rose Velvet",       subtitle: "Dark Wine & Soft Rose",        bg: "#2e1e1f", primary: "#e30b5c", dark: true  },
-  { id: "nordic-frost",   name: "Nordic Frost",      subtitle: "Charcoal & Ice Blue",          bg: "#35393C", primary: "#A4D8FF", dark: true  },
-  { id: "burnt-peach",    name: "Burnt Peach",       subtitle: "Eggshell & Burnt Peach",       bg: "#F4F1DE", primary: "#E07A5F", dark: false },
-  { id: "burgundy",       name: "Antique Burgundy",  subtitle: "Antique White & Burgundy",     bg: "#F7E6D2", primary: "#90202C", dark: false },
-  { id: "blue-slate",     name: "Nordic Slate",      subtitle: "Icy Blue & Blue Slate",        bg: "#B3D1ED", primary: "#516171", dark: false },
-  { id: "twilight-indigo",name: "Twilight Indigo",   subtitle: "Powder Petal & Twilight",      bg: "#F9DEC9", primary: "#3A405A", dark: false },
-  { id: "berry-blush",    name: "Berry Blush",       subtitle: "Berry Blush & Petal Frost",    bg: "#974472", primary: "#FEDDE8", dark: true  },
-  { id: "shadow-grey",    name: "Shadow Grey",       subtitle: "Shadow Grey & Sandy Clay",     bg: "#272727", primary: "#D4AA7D", dark: true  },
-  { id: "hunter-green",   name: "Hunter Green",      subtitle: "Hunter Green & Sand Dune",     bg: "#3E5F44", primary: "#DDD6B9", dark: true  },
-  { id: "morning-butter", name: "Morning Butter",    subtitle: "Blue Grey & Morning Butter",   bg: "#7298C7", primary: "#F3D98F", dark: true  },
-  { id: "thistle-mocha",  name: "Thistle Mocha",     subtitle: "Thistle & Deep Mocha",         bg: "#D6C8DF", primary: "#332927", dark: false },
-  { id: "rich-mahogany",  name: "Rich Mahogany",     subtitle: "Parchment & Rich Mahogany",    bg: "#EEEDE9", primary: "#371B17", dark: false },
-  { id: "cherry-twilight",name: "Cherry Twilight",   subtitle: "Cherry Blossom & Twilight",    bg: "#F9A8BB", primary: "#1A1265", dark: false },
-  { id: "lavender-blush", name: "Lavender Blush",    subtitle: "Lavender Blush & Blush",       bg: "#FFE6ED", primary: "#CF7486", dark: false },
-  { id: "espresso-peony", name: "Espresso Peony",    subtitle: "Espresso & Peony",             bg: "#3E2723", primary: "#F4C9D6", dark: true  },
-  { id: "soft-linen",     name: "Soft Linen",        subtitle: "Soft Linen & Cherry Blossom",  bg: "#F5F1E6", primary: "#F9A8BB", dark: false },
+  { id: "soft-linen",      name: "Soft Linen",         subtitle: "Soft Linen & Cherry Blossom",  bg: "#F5F1E6", primary: "#F9A8BB", dark: false },
+  { id: "espresso-peony",  name: "Espresso Peony",     subtitle: "Espresso & Peony",             bg: "#3E2723", primary: "#F4C9D6", dark: true  },
+  { id: "lavender-blush",  name: "Lavender Blush",     subtitle: "Lavender Blush & Blush",       bg: "#FFE6ED", primary: "#CF7486", dark: false },
+  { id: "cherry-twilight", name: "Cherry Twilight",    subtitle: "Cherry Blossom & Deep Twilight",bg: "#F9A8BB", primary: "#1A1265", dark: false },
+  { id: "rich-mahogany",   name: "Rich Mahogany",      subtitle: "Parchment & Rich Mahogany",    bg: "#EEEDE9", primary: "#371B17", dark: false },
+  { id: "thistle-mocha",   name: "Thistle Mocha",      subtitle: "Thistle & Deep Mocha",         bg: "#D6C8DF", primary: "#332927", dark: false },
+  { id: "morning-butter",  name: "Morning Butter",     subtitle: "Blue Grey & Morning Butter",   bg: "#7298C7", primary: "#F3D98F", dark: true  },
+  { id: "hunter-green",    name: "Hunter Green",       subtitle: "Hunter Green & Sand Dune",     bg: "#3E5F44", primary: "#DDD6B9", dark: true  },
+  { id: "berry-blush",     name: "Berry Blush",        subtitle: "Berry Blush & Petal Frost",    bg: "#974472", primary: "#FEDDE8", dark: true  },
+  { id: "blue-slate",      name: "Nordic Slate",       subtitle: "Icy Blue & Blue Slate",        bg: "#B3D1ED", primary: "#516171", dark: false },
+  { id: "shadow-grey",     name: "Shadow Grey",        subtitle: "Shadow Grey & Sandy Clay",     bg: "#272727", primary: "#D4AA7D", dark: true  },
+  { id: "twilight-indigo", name: "Twilight Indigo",    subtitle: "Powder Petal & Twilight",      bg: "#F9DEC9", primary: "#3A405A", dark: false },
+  { id: "burgundy",        name: "Antique Burgundy",   subtitle: "Antique White & Burgundy",     bg: "#F7E6D2", primary: "#90202C", dark: false },
+  { id: "burnt-peach",     name: "Burnt Peach",        subtitle: "Eggshell & Burnt Peach",       bg: "#F4F1DE", primary: "#E07A5F", dark: false },
+  { id: "rose-velvet",     name: "Rose Velvet",        subtitle: "Dark Wine & Soft Rose",        bg: "#2e1e1f", primary: "#e30b5c", dark: true  },
+  { id: "nordic-frost",    name: "Nordic Frost",       subtitle: "Charcoal & Ice Blue",          bg: "#35393C", primary: "#A4D8FF", dark: true  },
 ];
 
 const THEME_ALIASES = {
@@ -495,7 +495,23 @@ const THEME_ALIASES = {
   thistle: "thistle-mocha",
   parchment: "rich-mahogany",
   "cherry-blossom": "cherry-twilight",
+  "deep-twilight": "cherry-twilight",
   espresso: "espresso-peony",
+  peony: "espresso-peony",
+  "soft-linen": "soft-linen",
+  "cherry-blossom-linen": "soft-linen",
+  "lavender-blush": "lavender-blush",
+  blush: "lavender-blush",
+  "hunter-green": "hunter-green",
+  "sand-dune": "hunter-green",
+  "berry-blush": "berry-blush",
+  "petal-frost": "berry-blush",
+  "shadow-grey": "shadow-grey",
+  "sandy-clay": "shadow-grey",
+  burgundy: "burgundy",
+  "antique-white": "burgundy",
+  "burnt-peach": "burnt-peach",
+  eggshell: "burnt-peach",
 };
 
 function resolvePaletteId(id) {
@@ -614,23 +630,19 @@ function setTheme(theme) {
 function renderThemeGalleries() {
   const currentId = resolvePaletteId(state.activeTheme || state.gender || "rose-velvet");
 
-  // Render Settings Theme Gallery (theme customizer belongs strictly in Settings)
+  // Render Settings Theme Gallery (Theme labels only, no pictures allowed)
   if (els.settingsThemeGallery) {
     els.settingsThemeGallery.innerHTML = PALETTE_THEMES.map((p) => {
       const isActive = p.id === currentId;
-      return `<button class="settings-theme-card${isActive ? " is-active" : ""}" type="button" data-palette-id="${p.id}" role="radio" aria-checked="${isActive}">
-        <div class="settings-theme-swatches">
-          <span class="settings-swatch-half" style="background:${p.bg};"></span>
-          <span class="settings-swatch-half" style="background:${p.primary};"></span>
-        </div>
-        <strong>${p.name}</strong>
-        <span>${p.subtitle}</span>
+      return `<button class="settings-theme-card${isActive ? " is-active is-selected" : ""}" type="button" data-palette-id="${p.id}" role="radio" aria-checked="${isActive}">
+        <strong class="settings-theme-name">${p.name}</strong>
+        <span class="settings-theme-sub">${p.subtitle}</span>
       </button>`;
     }).join("");
 
     els.settingsThemeGallery.querySelectorAll(".settings-theme-card").forEach((card) => {
       card.addEventListener("click", () => {
-        soundEngine.playTone(520, 0.25);
+        soundEngine?.playTone?.(520, 0.25);
         setPalette(card.dataset.paletteId);
       });
     });
@@ -1950,6 +1962,7 @@ function setActiveView(viewName) {
   if (viewName === "signin") {
     updateAuthTabUi();
   } else if (viewName === "settings") {
+    renderThemeGalleries();
     updateInviteModalUi();
     updateSettingsModalUi();
   }
