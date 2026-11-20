@@ -111,6 +111,7 @@ const STORAGE_KEYS = {
   gender: "cozy-space-gender",
   haptics: "cozy-space-haptics",
   spaceId: "cozy-space-space-id",
+  photos: "cozy-space-shared-photos",
 };
 
 const savedGender = localStorage.getItem(STORAGE_KEYS.theme) || localStorage.getItem(STORAGE_KEYS.gender) || "rose-velvet";
@@ -134,6 +135,10 @@ const state = {
   selectedPlanDate: startOfDay(new Date()),
   schedulerMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12),
   dailyPhotoDataUrl: "",
+  photos: [],
+  pendingPhotos: [],
+  activePhotoId: null,
+  editingNotePhotos: [],
   isLive: false,
   user: null,
   profile: null,
@@ -184,6 +189,18 @@ const els = {
   photoPreview: document.querySelector("#photoPreview"),
   photoEmpty: document.querySelector("#photoEmpty"),
   photoStatus: document.querySelector("#photoStatus"),
+  photoGalleryStrip: document.querySelector("#photoGalleryStrip"),
+  notePhotoInput: document.querySelector("#notePhotoInput"),
+  notePhotoCount: document.querySelector("#notePhotoCount"),
+  notePhotosPreviewStrip: document.querySelector("#notePhotosPreviewStrip"),
+
+  // Image Lightbox
+  imageLightboxModal: document.querySelector("#imageLightboxModal"),
+  imageLightboxImg: document.querySelector("#imageLightboxImg"),
+  imageLightboxCloseButtons: document.querySelectorAll("[data-close-lightbox]"),
+  imageLightboxAuthor: document.querySelector("#imageLightboxAuthor"),
+  imageLightboxTime: document.querySelector("#imageLightboxTime"),
+  imageLightboxDownload: document.querySelector("#imageLightboxDownload"),
 
   // Theme Banners & Quick Switchers
   authBannerDot: document.querySelector("#authBannerDot"),
@@ -354,7 +371,17 @@ function loadLocalState() {
     },
   ]);
   state.plans = readJson(STORAGE_KEYS.plans, []);
+  state.photos = readJson(STORAGE_KEYS.photos, []);
   state.dailyPhotoDataUrl = localStorage.getItem(STORAGE_KEYS.photo) || "";
+  if (state.dailyPhotoDataUrl && state.photos.length === 0) {
+    state.photos.push({
+      id: "saved-initial-photo",
+      url: state.dailyPhotoDataUrl,
+      caption: "Daily Photo",
+      uploaderName: "You",
+      createdAt: new Date().toISOString(),
+    });
+  }
 
   const savedUser = getSavedUserFromStorage();
   if (savedUser) {
@@ -427,9 +454,26 @@ function wireUiEvents() {
   });
 
   // Photos
-  els.photoChooseButton.addEventListener("click", () => els.photoInput.click());
+  els.photoChooseButton.addEventListener("click", () => {
+    if (state.pendingPhotos && state.pendingPhotos.length > 0) {
+      sendPendingPhotos();
+    } else {
+      els.photoInput.click();
+    }
+  });
   els.photoDeleteButton.addEventListener("click", deleteDailyPhoto);
   els.photoInput.addEventListener("change", handlePhotoSelected);
+  els.photoPreview?.addEventListener("click", () => {
+    if (state.dailyPhotoDataUrl && (!state.pendingPhotos || state.pendingPhotos.length === 0)) {
+      const cur = state.photos.find((p) => p.url === state.dailyPhotoDataUrl) || {
+        url: state.dailyPhotoDataUrl,
+        caption: "Daily Photo",
+        uploaderName: "Shared Memory",
+        createdAt: new Date().toISOString(),
+      };
+      openLightbox(cur.url, cur.caption, cur.uploaderName, cur.createdAt);
+    }
+  });
 
   // Calendar
   els.calendarOpenButton.addEventListener("click", () => openCalendarModal(new Date()));
@@ -448,6 +492,12 @@ function wireUiEvents() {
   });
   els.noteForm.addEventListener("submit", saveCurrentNote);
   els.deleteNoteButton.addEventListener("click", deleteCurrentNote);
+  els.notePhotoInput?.addEventListener("change", handleNotePhotoSelected);
+
+  // Lightbox
+  els.imageLightboxCloseButtons?.forEach((button) => {
+    button.addEventListener("click", closeLightbox);
+  });
 
   // Escape key for all modals
   window.addEventListener("keydown", (event) => {
@@ -458,6 +508,7 @@ function wireUiEvents() {
       if (els.joinModal?.classList.contains("is-open")) closeJoinModal();
       if (els.noteModal?.classList.contains("is-open")) closeNoteModal();
       if (els.calendarModal?.classList.contains("is-open")) closeCalendarModal();
+      if (els.imageLightboxModal?.classList.contains("is-open")) closeLightbox();
     }
   });
 }
@@ -2067,6 +2118,7 @@ async function syncNotesFromSupabase() {
       body: n.body,
       savedAt: n.created_at,
       author: n.author_name || "Mine",
+      photos: Array.isArray(n.photos) ? n.photos : [],
     }));
     persistNotes();
     renderNotes();
@@ -2100,13 +2152,21 @@ async function syncPhotosFromSupabase() {
 
   const { data: photos, error } = await supabaseClient
     .from("photos")
-    .select("storage_path, caption")
+    .select("id, storage_path, caption, uploader_name, created_at, uploader_id")
     .eq("space_id", state.spaceId)
-    .order("created_at", { ascending: false })
-    .limit(1);
+    .order("created_at", { ascending: false });
 
   if (!error && photos && photos.length > 0) {
-    state.dailyPhotoDataUrl = photos[0].storage_path;
+    state.photos = photos.map((p) => ({
+      id: String(p.id),
+      url: p.storage_path,
+      caption: p.caption || "Shared Memory",
+      uploaderName: p.uploader_name || "Partner",
+      uploaderId: p.uploader_id,
+      createdAt: p.created_at,
+    }));
+    state.dailyPhotoDataUrl = state.photos[0].url;
+    localStorage.setItem(STORAGE_KEYS.photos, JSON.stringify(state.photos));
     localStorage.setItem(STORAGE_KEYS.photo, state.dailyPhotoDataUrl);
     renderDailyPhoto();
   }
@@ -2330,92 +2390,264 @@ function renderToday() {
 // Photos & Memories
 // -------------------------------------------------------------
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+}
+
 async function handlePhotoSelected(event) {
-  const [file] = event.target.files;
-  if (!file) return;
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
 
-  const reader = new FileReader();
-  reader.addEventListener("load", async () => {
-    state.dailyPhotoDataUrl = String(reader.result);
-    localStorage.setItem(STORAGE_KEYS.photo, state.dailyPhotoDataUrl);
-    renderDailyPhoto();
-    els.photoStatus.textContent = "Uploading to Supabase cloud...";
-    addActivity("New memory photo selected.");
+  state.pendingPhotos = [];
+  for (const file of files) {
+    try {
+      const previewUrl = await readFileAsDataUrl(file);
+      state.pendingPhotos.push({ file, previewUrl });
+    } catch (e) {
+      console.error("Error reading photo file:", e);
+    }
+  }
 
-    if (supabaseClient && state.spaceId) {
+  if (state.pendingPhotos.length === 0) return;
+
+  const count = state.pendingPhotos.length;
+  els.photoChooseButton.textContent = count > 1 ? `Send (${count})` : "Send";
+  els.photoChooseButton.classList.add("is-send-ready");
+
+  // Show preview of the first pending photo
+  els.photoPreview.src = state.pendingPhotos[0].previewUrl;
+  els.photoPreview.hidden = false;
+  els.photoEmpty.hidden = true;
+  els.photoDeleteButton.hidden = false;
+  els.photoStatus.textContent = `${count} photo${count > 1 ? "s" : ""} selected. Click Send to share.`;
+}
+
+async function sendPendingPhotos() {
+  if (!state.pendingPhotos || state.pendingPhotos.length === 0) return;
+
+  const count = state.pendingPhotos.length;
+  els.photoChooseButton.disabled = true;
+  els.photoStatus.textContent = `Sending ${count} photo${count > 1 ? "s" : ""}...`;
+
+  const actor = getActorName();
+  const uploadedPhotos = [];
+
+  for (const item of state.pendingPhotos) {
+    let finalUrl = item.previewUrl;
+
+    if (supabaseClient && state.spaceId && item.file) {
       try {
-        const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const cleanName = item.file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
         const filePath = `${state.spaceId}/${Date.now()}-${cleanName}`;
 
         const { error: uploadError } = await supabaseClient.storage
           .from("photos")
-          .upload(filePath, file, { upsert: true });
+          .upload(filePath, item.file, { upsert: true });
 
         if (!uploadError) {
           const { data: publicUrlData } = supabaseClient.storage
             .from("photos")
             .getPublicUrl(filePath);
 
-          const cloudUrl = publicUrlData.publicUrl;
-          state.dailyPhotoDataUrl = cloudUrl;
-          localStorage.setItem(STORAGE_KEYS.photo, cloudUrl);
-          renderDailyPhoto();
+          finalUrl = publicUrlData.publicUrl;
 
           await supabaseClient.from("photos").insert({
             space_id: state.spaceId,
             uploader_id: state.user?.id || null,
-            storage_path: cloudUrl,
-            caption: file.name,
-            uploader_name: getActorName(),
+            storage_path: finalUrl,
+            caption: item.file.name,
+            uploader_name: actor,
           });
-
-          await supabaseClient.from("activity_logs").insert({
-            space_id: state.spaceId,
-            actor_id: state.user?.id || null,
-            actor_name: getActorName(),
-            action_type: "photo_shared",
-            details: "Added a new memory photo",
-          });
-
-          els.photoStatus.textContent = "Synced to Supabase cloud!";
         } else {
           console.error("Storage upload error:", uploadError);
-          els.photoStatus.textContent = "Saved locally (Cloud upload error).";
         }
       } catch (err) {
-        console.error("Photo cloud sync exception:", err);
+        console.error("Photo upload error:", err);
       }
     }
-  });
 
-  reader.readAsDataURL(file);
+    uploadedPhotos.push({
+      id: createId(),
+      url: finalUrl,
+      caption: item.file?.name || "Shared Memory",
+      uploaderName: actor,
+      uploaderId: state.user?.id || null,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  // Prepend into state.photos
+  state.photos = [...uploadedPhotos, ...state.photos];
+  state.dailyPhotoDataUrl = state.photos[0].url;
+  state.pendingPhotos = [];
+
+  localStorage.setItem(STORAGE_KEYS.photos, JSON.stringify(state.photos));
+  localStorage.setItem(STORAGE_KEYS.photo, state.dailyPhotoDataUrl);
+
+  els.photoInput.value = "";
+  els.photoChooseButton.disabled = false;
+  els.photoChooseButton.textContent = "Choose";
+  els.photoChooseButton.classList.remove("is-send-ready");
+
+  if (supabaseClient && state.spaceId) {
+    try {
+      await supabaseClient.from("activity_logs").insert({
+        space_id: state.spaceId,
+        actor_id: state.user?.id || null,
+        actor_name: actor,
+        action_type: "photo_shared",
+        details: `Shared ${count} memory photo${count > 1 ? "s" : ""}`,
+      });
+    } catch (e) {}
+  }
+
+  addActivity(`Shared ${count} new memory photo${count > 1 ? "s" : ""}.`);
+  els.photoStatus.textContent = "Photos shared and synchronized!";
+  renderDailyPhoto();
 }
 
 function renderDailyPhoto() {
-  if (state.dailyPhotoDataUrl) {
+  if (state.pendingPhotos && state.pendingPhotos.length > 0) {
+    els.photoPreview.src = state.pendingPhotos[0].previewUrl;
+    els.photoPreview.hidden = false;
+    els.photoEmpty.hidden = true;
+    els.photoDeleteButton.hidden = false;
+    const count = state.pendingPhotos.length;
+    els.photoChooseButton.textContent = count > 1 ? `Send (${count})` : "Send";
+    els.photoChooseButton.classList.add("is-send-ready");
+  } else if (state.dailyPhotoDataUrl) {
     els.photoPreview.src = state.dailyPhotoDataUrl;
     els.photoPreview.hidden = false;
     els.photoEmpty.hidden = true;
     els.photoDeleteButton.hidden = false;
+    els.photoChooseButton.textContent = "Choose";
+    els.photoChooseButton.classList.remove("is-send-ready");
   } else {
     els.photoPreview.removeAttribute("src");
     els.photoPreview.hidden = true;
     els.photoEmpty.hidden = false;
     els.photoDeleteButton.hidden = true;
+    els.photoChooseButton.textContent = "Choose";
+    els.photoChooseButton.classList.remove("is-send-ready");
+  }
+
+  // Render gallery strip of all past and newly sent photos
+  if (els.photoGalleryStrip) {
+    els.photoGalleryStrip.innerHTML = "";
+    if (state.photos && state.photos.length > 0) {
+      state.photos.forEach((photo) => {
+        const card = document.createElement("div");
+        card.className = "photo-gallery-card";
+        if (photo.url === state.dailyPhotoDataUrl) {
+          card.classList.add("is-active");
+        }
+
+        const img = document.createElement("img");
+        img.src = photo.url;
+        img.alt = photo.caption || "Shared memory";
+        img.loading = "lazy";
+
+        const pill = document.createElement("span");
+        pill.className = "photo-sender-pill";
+        const isMine = (state.user?.id && photo.uploaderId === state.user.id) || (photo.uploaderName === getActorName());
+        pill.textContent = isMine ? "You" : (photo.uploaderName || "Partner");
+
+        card.appendChild(img);
+        card.appendChild(pill);
+
+        card.addEventListener("click", () => {
+          state.dailyPhotoDataUrl = photo.url;
+          localStorage.setItem(STORAGE_KEYS.photo, photo.url);
+          renderDailyPhoto();
+          openLightbox(photo.url, photo.caption, photo.uploaderName, photo.createdAt);
+        });
+
+        els.photoGalleryStrip.appendChild(card);
+      });
+      els.photoGalleryStrip.hidden = false;
+    } else {
+      els.photoGalleryStrip.hidden = true;
+    }
   }
 }
 
 async function deleteDailyPhoto() {
-  state.dailyPhotoDataUrl = "";
-  localStorage.removeItem(STORAGE_KEYS.photo);
+  // If there are pending photos, clicking delete cancels the selection
+  if (state.pendingPhotos && state.pendingPhotos.length > 0) {
+    state.pendingPhotos = [];
+    els.photoInput.value = "";
+    els.photoChooseButton.textContent = "Choose";
+    els.photoChooseButton.classList.remove("is-send-ready");
+    els.photoStatus.textContent = "Photo selection cancelled.";
+    renderDailyPhoto();
+    return;
+  }
+
+  const currentUrl = state.dailyPhotoDataUrl;
+  if (!currentUrl) return;
+
+  const targetPhoto = state.photos.find((p) => p.url === currentUrl);
+  state.photos = state.photos.filter((p) => p.url !== currentUrl);
+  state.dailyPhotoDataUrl = state.photos.length > 0 ? state.photos[0].url : "";
+
+  localStorage.setItem(STORAGE_KEYS.photos, JSON.stringify(state.photos));
+  if (state.dailyPhotoDataUrl) {
+    localStorage.setItem(STORAGE_KEYS.photo, state.dailyPhotoDataUrl);
+  } else {
+    localStorage.removeItem(STORAGE_KEYS.photo);
+  }
+
   els.photoInput.value = "";
   renderDailyPhoto();
-  els.photoStatus.textContent = "Photo slot cleared.";
+  els.photoStatus.textContent = "Photo removed.";
   addActivity("Memory photo cleared.");
 
-  if (supabaseClient && state.spaceId) {
-    await supabaseClient.from("photos").delete().eq("space_id", state.spaceId);
+  if (supabaseClient && state.spaceId && targetPhoto) {
+    try {
+      await supabaseClient
+        .from("photos")
+        .delete()
+        .eq("space_id", state.spaceId)
+        .eq("storage_path", currentUrl);
+    } catch (err) {
+      console.error("Error deleting photo from cloud:", err);
+    }
   }
+}
+
+// -------------------------------------------------------------
+// Photo Lightbox
+// -------------------------------------------------------------
+
+function openLightbox(url, caption, author, time) {
+  if (!els.imageLightboxModal) return;
+  if (els.imageLightboxImg) {
+    els.imageLightboxImg.src = url;
+  }
+  if (els.imageLightboxAuthor) {
+    els.imageLightboxAuthor.textContent = author ? `By ${author}` : "Shared Memory";
+  }
+  if (els.imageLightboxTime) {
+    const d = time ? new Date(time) : new Date();
+    els.imageLightboxTime.textContent = isNaN(d.getTime()) ? "" : formatPreciseDateTime(d);
+  }
+  if (els.imageLightboxDownload) {
+    els.imageLightboxDownload.href = url;
+    els.imageLightboxDownload.setAttribute("download", `cozy-memory-${Date.now()}.jpg`);
+  }
+  els.imageLightboxModal.classList.add("is-open");
+  els.imageLightboxModal.setAttribute("aria-hidden", "false");
+}
+
+function closeLightbox() {
+  if (!els.imageLightboxModal) return;
+  els.imageLightboxModal.classList.remove("is-open");
+  els.imageLightboxModal.setAttribute("aria-hidden", "true");
 }
 
 // -------------------------------------------------------------
@@ -2425,6 +2657,61 @@ async function deleteDailyPhoto() {
 function startNewNote() {
   clearNoteForm();
   openNoteModal();
+}
+
+async function handleNotePhotoSelected(event) {
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+
+  for (const file of files) {
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      state.editingNotePhotos.push({
+        id: createId(),
+        file,
+        url: dataUrl,
+        name: file.name,
+      });
+    } catch (e) {
+      console.error("Error reading note photo:", e);
+    }
+  }
+
+  els.notePhotoInput.value = "";
+  renderNotePhotosPreview();
+}
+
+function renderNotePhotosPreview() {
+  if (!els.notePhotosPreviewStrip) return;
+  els.notePhotosPreviewStrip.innerHTML = "";
+  const count = state.editingNotePhotos.length;
+  if (els.notePhotoCount) {
+    els.notePhotoCount.textContent = count > 0 ? `${count} photo${count > 1 ? "s" : ""} attached` : "";
+  }
+
+  state.editingNotePhotos.forEach((item, index) => {
+    const chip = document.createElement("div");
+    chip.className = "note-preview-chip";
+
+    const img = document.createElement("img");
+    img.src = item.url;
+    img.alt = item.name || "Attached photo";
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "note-chip-remove";
+    removeBtn.innerHTML = "&times;";
+    removeBtn.title = "Remove photo";
+    removeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      state.editingNotePhotos.splice(index, 1);
+      renderNotePhotosPreview();
+    });
+
+    chip.appendChild(img);
+    chip.appendChild(removeBtn);
+    els.notePhotosPreviewStrip.appendChild(chip);
+  });
 }
 
 async function saveCurrentNote(event) {
@@ -2437,17 +2724,45 @@ async function saveCurrentNote(event) {
   const savedAt = new Date().toISOString();
   const actor = getActorName();
 
+  // Process attached photos
+  const notePhotos = [];
+  for (const item of state.editingNotePhotos) {
+    let photoUrl = item.url;
+    if (supabaseClient && state.spaceId && item.file) {
+      try {
+        const cleanName = item.file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const filePath = `${state.spaceId}/notes/${Date.now()}-${cleanName}`;
+        const { error: uploadErr } = await supabaseClient.storage
+          .from("photos")
+          .upload(filePath, item.file, { upsert: true });
+
+        if (!uploadErr) {
+          const { data: publicUrlData } = supabaseClient.storage
+            .from("photos")
+            .getPublicUrl(filePath);
+          photoUrl = publicUrlData.publicUrl;
+        }
+      } catch (err) {
+        console.error("Error uploading note photo:", err);
+      }
+    }
+    notePhotos.push({
+      url: photoUrl,
+      name: item.name || "Photo",
+    });
+  }
+
   if (state.editingNoteId) {
     state.notes = state.notes.map((note) => {
       if (note.id !== state.editingNoteId) return note;
-      return { ...note, title, body, savedAt, author: actor };
+      return { ...note, title, body, savedAt, author: actor, photos: notePhotos };
     });
     addActivity("Love note updated.");
 
     if (supabaseClient && !state.editingNoteId.startsWith("local-")) {
       await supabaseClient
         .from("love_notes")
-        .update({ title, body, author_name: actor })
+        .update({ title, body, author_name: actor, photos: notePhotos })
         .eq("id", state.editingNoteId);
     }
   } else {
@@ -2459,6 +2774,7 @@ async function saveCurrentNote(event) {
       body,
       savedAt,
       author: actor,
+      photos: notePhotos,
     });
     addActivity("New love note saved.");
 
@@ -2471,6 +2787,7 @@ async function saveCurrentNote(event) {
           title,
           body,
           author_name: actor,
+          photos: notePhotos,
         })
         .select()
         .single();
@@ -2493,6 +2810,7 @@ async function saveCurrentNote(event) {
   persistNotes();
   renderNotes();
   els.deleteNoteButton.disabled = false;
+  clearNoteForm();
   closeNoteModal();
 }
 
@@ -2505,6 +2823,13 @@ function editNote(noteId) {
   els.noteTitleInput.value = note.title;
   els.noteBodyInput.value = note.body;
   els.deleteNoteButton.disabled = false;
+
+  state.editingNotePhotos = (note.photos || []).map((p) => {
+    if (typeof p === "string") return { url: p, name: "Photo" };
+    return { url: p.url, name: p.name || "Photo" };
+  });
+  renderNotePhotosPreview();
+
   openNoteModal();
 }
 
@@ -2541,6 +2866,8 @@ function clearNoteForm() {
   els.noteTitleInput.value = "";
   els.noteBodyInput.value = "";
   els.deleteNoteButton.disabled = true;
+  state.editingNotePhotos = [];
+  renderNotePhotosPreview();
 }
 
 function renderNotes() {
@@ -2573,10 +2900,42 @@ function renderNotes() {
     preview.textContent = note.body;
 
     time.className = "note-history-time";
-    time.textContent = `Saved ${formatPreciseDateTime(new Date(note.savedAt))}`;
+    time.textContent = `Saved ${formatPreciseDateTime(new Date(note.savedAt))}${note.author ? ` by ${note.author}` : ""}`;
 
     button.append(title, preview, time);
     item.appendChild(button);
+
+    // If note has attached photos, render thumbnail grid with lightbox view and save triggers!
+    if (note.photos && note.photos.length > 0) {
+      const photosGrid = document.createElement("div");
+      photosGrid.className = "note-photos-grid";
+
+      note.photos.forEach((photo) => {
+        const photoUrl = typeof photo === "string" ? photo : photo.url;
+        if (!photoUrl) return;
+
+        const thumb = document.createElement("button");
+        thumb.type = "button";
+        thumb.className = "note-photo-thumb";
+        thumb.title = "View photo full screen";
+
+        const img = document.createElement("img");
+        img.src = photoUrl;
+        img.alt = photo.name || "Attached photo";
+        img.loading = "lazy";
+
+        thumb.appendChild(img);
+        thumb.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openLightbox(photoUrl, note.title, note.author, note.savedAt);
+        });
+
+        photosGrid.appendChild(thumb);
+      });
+
+      item.appendChild(photosGrid);
+    }
+
     els.notesList.appendChild(item);
   });
 }
