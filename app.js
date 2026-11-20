@@ -2949,6 +2949,8 @@ function persistNotes() {
 // -------------------------------------------------------------
 
 function createHeartParticles(sourceElement) {
+  if (!els.particleLayer || !sourceElement) return;
+
   const rect = sourceElement.getBoundingClientRect();
   const originX = rect.left + rect.width / 2;
   const originY = rect.top + rect.height / 2;
@@ -2958,11 +2960,20 @@ function createHeartParticles(sourceElement) {
     dot.className = "hug-particle-dot";
     dot.style.left = `${originX}px`;
     dot.style.top = `${originY}px`;
-    dot.style.setProperty("--drift", `${randomBetween(-90, 90)}px`);
+    dot.style.setProperty("--drift", `${randomBetween(-80, 80)}px`);
+    dot.style.setProperty("--drift-y", `${randomBetween(-100, -180)}px`);
     dot.style.animationDelay = `${index * 24}ms`;
 
     els.particleLayer.appendChild(dot);
-    dot.addEventListener("animationend", () => dot.remove(), { once: true });
+
+    const cleanUp = () => {
+      if (dot.parentElement) {
+        dot.remove();
+      }
+    };
+
+    dot.addEventListener("animationend", cleanUp, { once: true });
+    window.setTimeout(cleanUp, 1400);
   }
 }
 

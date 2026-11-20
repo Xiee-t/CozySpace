@@ -1683,15 +1683,26 @@ h2 {
   height: 10px;
   border-radius: 50%;
   background: var(--color-primary);
-  box-shadow: 0 0 12px var(--color-primary);
+  box-shadow: 0 0 14px var(--interactive-glow);
   pointer-events: none;
-  animation: particleFloat 1200ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-}
-  color: var(--color-primary);
-  font-size: 1.4rem;
-  opacity: 0;
   transform: translate(-50%, -50%);
-  animation: floatHeart 900ms ease-out forwards;
+  will-change: transform, opacity;
+  animation: particleFloat 1100ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes particleFloat {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--drift) * 0.4), calc(-50% + var(--drift-y, -50px) * 0.4)) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--drift)), calc(-50% + var(--drift-y, -140px))) scale(0.2);
+  }
 }
 
 .visual-shake {
